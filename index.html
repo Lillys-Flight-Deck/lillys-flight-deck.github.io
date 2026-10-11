@@ -1,0 +1,847 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%2312263F%22/%3E%3Cpath fill=%22%23E8A200%22 d=%22M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z%22/%3E%3C/svg%3E"><meta name="theme-color" content="#12263F"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Flight Deck"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Lilly's Flight Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Saira+Extra+Condensed:wght@600;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a pilot's flight deck. One column of "instrument" panels, bottom nav like a cockpit switch row. Aviation-chart palette: chart paper, navy ink, taxiway amber, VFR magenta. */
+:root{
+  --bg:#EAF1F3; --panel:#FFFFFF; --ink:#12263F; --muted:#51647A; --line:#C9D6DD;
+  --amber:#E8A200; --amber-ink:#5A3E00; --magenta:#A3156F; --sky:#2C7DA0;
+  --good:#1E7F4F; --good-bg:#DDF2E6; --bad:#B3261E; --bad-bg:#FBE3E1;
+  --chip:#DCE8EE;
+  --f-display:"Saira Extra Condensed","Arial Narrow",sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1522; --panel:#132235; --ink:#E6EEF4; --muted:#9DB0C2; --line:#25384D;
+  --amber:#FFC23D; --amber-ink:#2A1D00; --magenta:#F07AC0; --sky:#6CC3E6;
+  --good:#5FD39A; --good-bg:#123826; --bad:#FF8A80; --bad-bg:#3A1716; --chip:#1C3047; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1522; --panel:#132235; --ink:#E6EEF4; --muted:#9DB0C2; --line:#25384D;
+  --amber:#FFC23D; --amber-ink:#2A1D00; --magenta:#F07AC0; --sky:#6CC3E6;
+  --good:#5FD39A; --good-bg:#123826; --bad:#FF8A80; --bad-bg:#3A1716; --chip:#1C3047; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;margin:0}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:14px 110px}
+h1,h2,h3{font-family:var(--f-display);font-weight:800;letter-spacing:.02em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:2.3rem} h2{font-size:1.75rem} h3{font-size:1.3rem}
+p{margin:0}
+.label{font-family:var(--f-display);font-weight:600;font-size:.95rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.btn{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;background:var(--ink);color:var(--bg);display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn.amber{background:var(--amber);color:var(--amber-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{padding:8px 12px;font-size:.92rem}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,.opt:focus-visible,.card:focus-visible{outline:3px solid var(--magenta);outline-offset:2px}
+.btn[disabled]{opacity:.45;cursor:default}
+/* header / instruments */
+.top{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.alt{width:112px;height:112px}
+.alt text{fill:var(--ink)}
+.rank{font-family:var(--f-display);font-weight:800;font-size:1.6rem;color:var(--magenta);text-transform:uppercase;letter-spacing:.04em}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:6px}
+.stat b{font-family:var(--f-mono);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.stat span{display:block;font-size:.8rem;color:var(--muted)}
+/* boarding pass mission */
+.pass{display:grid;grid-template-columns:1fr auto;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.pass .main{padding:16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.pass .stub{background:var(--amber);color:var(--amber-ink);padding:16px 14px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border-left:2px dashed var(--bg);min-width:96px}
+.stub b{font-family:var(--f-display);font-size:2rem;line-height:1}
+.stub small{font-family:var(--f-display);letter-spacing:.12em;font-size:.8rem;text-transform:uppercase}
+.flight{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:460px){.grid2{grid-template-columns:1fr}}
+.card{text-align:left;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;min-width:0}
+.card:hover{border-color:var(--sky)}
+.card .sub{font-size:.9rem;color:var(--muted)}
+.meter{height:6px;background:var(--chip);border-radius:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--good)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:inherit;font-size:.92rem;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* lesson */
+.lesson section{display:flex;flex-direction:column;gap:8px}
+.cup{background:var(--chip);border-radius:12px;padding:14px}
+.rule{border-left:4px solid var(--amber);padding:6px 0 6px 12px;font-weight:700}
+.math{font-family:var(--f-mono);font-weight:500}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+ol.steps li::marker{font-family:var(--f-mono);color:var(--magenta);font-weight:700}
+.pilot{display:flex;gap:10px;align-items:flex-start;font-size:.95rem;color:var(--muted)}
+.pilot svg{flex:0 0 22px;margin-top:2px}
+/* practice */
+.q{font-size:1.15rem}
+.q sup{font-size:.7em}
+.ansrow{display:flex;gap:10px;flex-wrap:wrap}
+.ansrow input{flex:1 1 160px;min-width:0;font:inherit;font-family:var(--f-mono);font-size:1.15rem;padding:12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.opt.right{border-color:var(--good);background:var(--good-bg)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.fb{border-radius:12px;padding:12px 14px;font-weight:700}
+.fb.good{background:var(--good-bg);color:var(--good)}
+.fb.bad{background:var(--bad-bg);color:var(--bad)}
+.hint{background:var(--chip);border-radius:12px;padding:12px 14px}
+.prog{display:flex;gap:6px}
+.prog i{flex:1;height:6px;border-radius:6px;background:var(--chip)}
+.prog i.done{background:var(--good)} .prog i.miss{background:var(--bad)} .prog i.now{background:var(--amber)}
+/* handbook */
+.search{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink)}
+dl.terms{margin:0;display:flex;flex-direction:column}
+dl.terms div{padding:12px 0;border-bottom:1px solid var(--line)}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:2px 0 0;color:var(--muted)}
+.formula{font-family:var(--f-mono);font-weight:700;font-size:1.05rem;color:var(--magenta)}
+/* flashcard */
+.flash{min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:8px;text-align:center;cursor:pointer;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:100%}
+.flash .big{font-family:var(--f-display);font-weight:800;font-size:1.9rem}
+/* nav */
+nav.bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:4px;z-index:5}
+.tab{font:inherit;background:transparent;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;cursor:pointer;flex:1 1 0;min-width:0;max-width:130px;font-family:var(--f-display);font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:.8rem;white-space:nowrap}
+.tab[aria-current="page"]{color:var(--ink);background:var(--chip)}
+.tab svg{width:22px;height:22px}
+.back{font:inherit;background:none;border:0;color:var(--sky);font-weight:700;cursor:pointer;padding:0;align-self:flex-start}
+.note{font-size:.9rem;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--chip);font-size:.9rem}
+.badge.off{opacity:.45}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;z-index:9;max-width:calc(100% - 32px);text-align:center}
+textarea.search{min-height:90px;resize:vertical;font-family:var(--f-body)}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
+.drop input[type=file]{font:inherit;max-width:100%}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+details.rev{border-top:1px solid var(--line);padding:10px 0}
+details.rev summary{cursor:pointer;font-weight:700}
+.timer{font-family:var(--f-mono);font-weight:700;color:var(--magenta)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field input{font:inherit;font-family:var(--f-mono);padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);width:100%}
+.big-num{font-family:var(--f-display);font-weight:800;font-size:2.4rem;color:var(--magenta);line-height:1}
+.report{white-space:pre-wrap;font-family:var(--f-body);background:var(--chip);border-radius:12px;padding:14px;user-select:all}
+.tag{display:inline-block;font-family:var(--f-display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:.8rem;padding:2px 8px;border-radius:6px;background:var(--amber);color:var(--amber-ink)}
+@media (prefers-reduced-motion:no-preference){.pop{animation:pop .35s ease-out}@keyframes pop{from{transform:scale(.96);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+<div class="wrap" id="app" aria-live="polite"></div>
+<nav class="bar" aria-label="Main">
+  <button class="tab" data-tab="home" id="tab-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12l5-3"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>Cockpit</button>
+  <button class="tab" data-tab="school" id="tab-school"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M7 9v5c0 1.7 2.2 3 5 3s5-1.3 5-3V9"/></svg>Lessons</button>
+  <button class="tab" data-tab="ask" id="tab-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>Scan</button>
+  <button class="tab" data-tab="book" id="tab-book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3V4z"/><path d="M5 17a3 3 0 013-3h11"/></svg>Handbook</button>
+  <button class="tab" data-tab="log" id="tab-log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>Logbook</button>
+</nav>
+
+<script>
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { a = a.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; };
+const r = (x,d=2) => Math.round(x*10**d)/10**d;
+const f = n => { if (Number.isInteger(n)) return String(n); return String(r(n,2)); };
+const sp = n => n < 0 ? '−' + f(-n) : f(n);
+const deg = x => x*Math.PI/180, todeg = x => x*180/Math.PI;
+const sup = n => `<sup>${n}</sup>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function mc(correct, wrongs){ const seen=new Set([correct]); const w=[]; for(const x of wrongs){ if(!seen.has(x)){seen.add(x);w.push(x)} } return {kind:'mc', ans:correct, opts:shuffle([correct,...w.slice(0,3)])}; }
+function lin(coef, v, first){ // formats +3x, −x
+  if (coef===0) return '';
+  const s = coef<0 ? (first?'−':' − ') : (first?'':' + ');
+  const a = Math.abs(coef);
+  return s + (v && a===1 ? '' : a) + (v||'');
+}
+const PLANE = '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+
+/* ---------- saved progress (this device only) ---------- */
+const KEY='lilly.flightdeck.v1';
+const FRESH = () => ({xp:0, streak:0, lastDay:'', stats:{}, mistakes:[], missionsDone:0, cards:0, wake:0, bed:0, custom:[], days:{}, fund:{goal:150000, have:0, monthly:500, rate:8}, exams:[]});
+let S = FRESH();
+try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+const STANDALONE = !window.claude;
+const today = () => new Date().toISOString().slice(0,10);
+function markDay(){
+  const t = today(); if (S.lastDay === t) return;
+  const y = new Date(Date.now()-864e5).toISOString().slice(0,10);
+  S.streak = S.lastDay === y ? S.streak + 1 : 1; S.lastDay = t; save();
+}
+const RANKS = [[0,'Cadet'],[150,'Student Pilot'],[400,'Private Pilot'],[900,'Commercial Pilot'],[1800,'First Officer'],[3500,'Captain']];
+function rankOf(xp){ let i=0; RANKS.forEach((r,k)=>{ if (xp>=r[0]) i=k; }); const next=RANKS[i+1]; return {name:RANKS[i][1], i, base:RANKS[i][0], next: next?next[0]:null, nextName: next?next[1]:null}; }
+
+const YAY = ['Yebo! Clean landing.','Sho, that is a slay. No cap.','Hayibo Lilly, you ate that.','Smooth like a 747 touchdown.','It is giving Captain energy.','Sharp sharp, chommie. Correct.',
+ 'Correct. Somewhere a flight school just felt a disturbance.','Look at you. Air traffic control is clearing the runway for you.','That answer had a first-class ticket.','Right! Your future passengers say thank you.','Okay Captain, we see you. Keep that energy for the exam.','Correct. Your calculator is proud of you, it told me.'];
+const NAY = ['Eish, close one. Let us look at the steps.','Turbulence, no stress. Check the steps below.','Not yet, chommie. Pilots practise until it sticks.','Lowkey tricky one. See how it is done below.',
+ 'Eish. Keep missing these and you will be flying a taxi on the N1, not a 787. Steps below.','Imagine paying R5 000 for a flight when you could have been the one flying it. Fix this one.','That answer just got sent to economy class. Upgrade it with the steps below.','Hayibo! Even the autopilot is shaking its head. Read the steps, try the next one.','Your future co-pilot just asked for a transfer. Win them back below.','Plot twist: you are the passenger again. Steps below, Captain.','Mayday, mayday. Not you crash-landing a question you can do. Look at the steps.','A Toyota Tazz with no aircon is calling your name. Answer the next one right and it hangs up.','The cabin crew saw that. They are pretending they did not. Steps below.','Not the boarding gate closing on you. Run, chommie, read the steps.'];
+
+/* ---------- MATHS (Grade 11 CAPS) ---------- */
+const MATHS = [
+{ id:'exp', name:'Exponents & surds', blurb:'Powers, roots and their rules',
+  cup:`Think of <b>2${sup(3)}</b> as "2 cupcakes, times itself 3 times": 2 × 2 × 2 = 8. The small number (the exponent) just counts how many times you multiply. When you multiply two powers with the same base, you are just counting all the 2's together, so you <b>add</b> the counts.`,
+  rule:`a${sup('m')} × a${sup('n')} = a${sup('m+n')} &nbsp;·&nbsp; a${sup('m')} ÷ a${sup('n')} = a${sup('m−n')} &nbsp;·&nbsp; (a${sup('m')})${sup('n')} = a${sup('mn')} &nbsp;·&nbsp; a${sup('m/n')} = (ⁿ√a)${sup('m')}`,
+  ex:{q:`Work out 8${sup('2/3')}`, steps:['The bottom of the fraction (3) means cube root: ∛8 = 2, because 2 × 2 × 2 = 8.','The top (2) means square it: 2² = 4.','So 8^(2/3) = 4.']},
+  pilot:'Pilots use powers when engine and fuel numbers get huge, and scientific notation (10 to the power of something) is all exponents.',
+  gen(){ const v = ri(1,3);
+    if (v===1){ const a=ri(2,9), b=ri(2,9), c=ri(1,5);
+      return {q:`Simplify 3${sup(a)} × 3${sup(b)} ÷ 3${sup(c)}. Answer as a power of 3: what is the exponent?`, kind:'num', ans:a+b-c,
+        hint:'Same base? Multiply means add the exponents, divide means subtract.', steps:[`Multiply: add the exponents → ${a} + ${b} = ${a+b}`,`Divide: subtract → ${a+b} − ${c} = ${a+b-c}`,`Answer: 3^${a+b-c}, so the exponent is ${a+b-c}`]}; }
+    if (v===2){ const [base,n] = pick([[8,3],[27,3],[16,4],[4,2],[9,2],[32,5],[125,3],[25,2],[64,3]]); const root=Math.round(base**(1/n)); const m=ri(1,3);
+      return {q:`Work out ${base}${sup(m+'/'+n)}`, kind:'num', ans:root**m,
+        hint:`Bottom number = which root. Top number = which power.`, steps:[`Bottom is ${n}: take the ${n===2?'square':n===3?'cube':n+'th'} root of ${base} → ${root}`,`Top is ${m}: ${root}^${m} = ${root**m}`]}; }
+    const a=ri(2,6), m=ri(2,5), n=ri(2,4);
+    return {q:`Simplify (x${sup(m)})${sup(n)}. What is the exponent of x?`, kind:'num', ans:m*n, hint:'A power of a power: multiply the exponents.', steps:[`Power of a power → multiply: ${m} × ${n} = ${m*n}`,`So (x^${m})^${n} = x^${m*n}`]}; } },
+{ id:'quad', name:'Quadratic equations', blurb:'Solving x² + bx + c = 0',
+  cup:`A quadratic is like a mystery box with <b>two</b> possible answers. Factorising splits it into two brackets. If two numbers multiply to give 0, one of them <b>must</b> be 0 (0 cupcakes × anything = 0 cupcakes). So each bracket gives you one answer.`,
+  rule:`For x² + bx + c = 0: find two numbers that <b>multiply to c</b> and <b>add to b</b>. Then (x + p)(x + q) = 0, so x = −p or x = −q.`,
+  ex:{q:'Solve x² − 5x + 6 = 0', steps:['Two numbers that multiply to 6 and add to −5: −2 and −3.','Write the brackets: (x − 2)(x − 3) = 0.','Each bracket = 0: x − 2 = 0 → x = 2, or x − 3 = 0 → x = 3.']},
+  pilot:'The path of a ball, or a plane in a parabolic flight, follows a quadratic. Solving it tells you where it lands.',
+  gen(){ let r1=ri(-7,7), r2=ri(-7,7); while(r1===0) r1=ri(1,7); while(r2===0||r2===r1) r2=ri(-7,7);
+    const b=-(r1+r2), c=r1*r2; const eq=`x²${lin(b,'x',false)}${lin(c,'',false)} = 0`;
+    const lo=Math.min(r1,r2), hi=Math.max(r1,r2); const fmt=(a,b)=>`x = ${sp(Math.min(a,b))} or x = ${sp(Math.max(a,b))}`;
+    return Object.assign(mc(fmt(lo,hi),[fmt(-lo,-hi),fmt(lo,-hi),fmt(-lo,hi),fmt(lo+1,hi)]),
+      {q:`Solve: <span class="math">${eq}</span>`, hint:`Find two numbers that multiply to ${sp(c)} and add up to ${sp(b)}.`,
+       steps:[`Multiply to ${sp(c)}, add to ${sp(b)}: the numbers are ${sp(-r1)} and ${sp(-r2)}.`,`Brackets: (x${lin(-r1,'',false)})(x${lin(-r2,'',false)}) = 0`,`Each bracket = 0 → x = ${sp(r1)} or x = ${sp(r2)}`]}); } },
+{ id:'pattern', name:'Number patterns', blurb:'Quadratic patterns and Tn',
+  cup:`Picture stacking cupcakes: 2, 5, 10, 17… The gaps grow (3, 5, 7). When the <b>gaps between the gaps</b> stay the same, it is a quadratic pattern. That steady "second gap" is the secret code to the whole pattern.`,
+  rule:`Tn = an² + bn + c. &nbsp;Second difference = 2a. &nbsp;First gap (T2 − T1) = 3a + b. &nbsp;T1 = a + b + c.`,
+  ex:{q:'Find Tn for 2; 5; 10; 17', steps:['First gaps: 3; 5; 7. Second gap: 2.','2a = 2 → a = 1.','3a + b = 3 → 3 + b = 3 → b = 0.','a + b + c = 2 → 1 + 0 + c = 2 → c = 1.','Tn = n² + 1.']},
+  pilot:'Patterns help predict things, like how fuel use grows as a flight gets longer.',
+  gen(){ const a=ri(1,3), b=ri(-4,4), c=ri(-5,6); const T=n=>a*n*n+b*n+c; const ts=[1,2,3,4].map(T); const d1=[ts[1]-ts[0],ts[2]-ts[1],ts[3]-ts[2]];
+    return {q:`The pattern is <span class="math">${ts.map(sp).join('; ')}; …</span><br>What is T${sup('')}<sub>10</sub> (the 10th term)?`, kind:'num', ans:T(10),
+      hint:'Work out the first gaps, then the second gap. Second gap = 2a.',
+      steps:[`First gaps: ${d1.map(sp).join('; ')}. Second gap: ${2*a}.`,`2a = ${2*a} → a = ${a}`,`3a + b = ${sp(d1[0])} → b = ${sp(b)}`,`a + b + c = ${sp(ts[0])} → c = ${sp(c)}`,`Tn = ${a===1?'':a}n²${lin(b,'n',false)}${lin(c,'',false)}`,`T10 = ${a}(100)${b<0?' − ':' + '}${Math.abs(b)}(10)${c<0?' − ':' + '}${Math.abs(c)} = ${T(10)}`]}; } },
+{ id:'ageo', name:'Analytical geometry', blurb:'Gradient, midpoint, distance',
+  cup:`Think of a runway drawn on a grid. <b>Gradient</b> is how steep it is: how many blocks up for every block across. <b>Midpoint</b> is exactly halfway. <b>Distance</b> is just Pythagoras: walk across, walk up, and the straight line is the long side of the triangle.`,
+  rule:`m = (y₂ − y₁)/(x₂ − x₁) &nbsp;·&nbsp; M = ((x₁+x₂)/2 ; (y₁+y₂)/2) &nbsp;·&nbsp; d = √[(x₂−x₁)² + (y₂−y₁)²]`,
+  ex:{q:'Gradient between A(1; 2) and B(4; 8)', steps:['Up: 8 − 2 = 6. Across: 4 − 1 = 3.','m = 6 ÷ 3 = 2.']},
+  pilot:'A plane\'s climb is a gradient. Air traffic control uses coordinates like these to place every aircraft.',
+  gen(){ const v=ri(1,3); const x1=ri(-6,6), y1=ri(-6,6);
+    if (v===1){ let dx=ri(-6,6); while(dx===0) dx=ri(-6,6); const k=pick([1,2,3,-1,-2,0.5]); const dy=Math.round(dx*k); const x2=x1+dx, y2=y1+dy;
+      return {q:`Find the gradient of the line through A(${sp(x1)}; ${sp(y1)}) and B(${sp(x2)}; ${sp(y2)}).`, kind:'num', ans:r(dy/dx,2), tol:0.01,
+        hint:'Gradient = change in y ÷ change in x. Keep the same order for both.', steps:[`Change in y: ${sp(y2)} − (${sp(y1)}) = ${sp(dy)}`,`Change in x: ${sp(x2)} − (${sp(x1)}) = ${sp(dx)}`,`m = ${sp(dy)} ÷ ${sp(dx)} = ${sp(r(dy/dx,2))}`]}; }
+    if (v===2){ const [p,q,h]=pick([[3,4,5],[6,8,10],[5,12,13],[8,6,10],[9,12,15]]); const x2=x1+p*pick([1,-1]), y2=y1+q*pick([1,-1]);
+      return {q:`Find the distance between P(${sp(x1)}; ${sp(y1)}) and Q(${sp(x2)}; ${sp(y2)}).`, kind:'num', ans:h,
+        hint:'Across², plus up², then square root.', steps:[`Across: ${sp(x2-x1)} → squared ${p*p}`,`Up: ${sp(y2-y1)} → squared ${q*q}`,`d = √(${p*p} + ${q*q}) = √${h*h} = ${h}`]}; }
+    const x2=x1+2*ri(-4,4), y2=y1+2*ri(-4,4); const mx=(x1+x2)/2, my=(y1+y2)/2; const o=(a,b)=>`(${sp(a)}; ${sp(b)})`;
+    return Object.assign(mc(o(mx,my),[o(my,mx),o(x2-x1,y2-y1),o(mx,-my),o(mx+1,my)]),{q:`Find the midpoint of C(${sp(x1)}; ${sp(y1)}) and D(${sp(x2)}; ${sp(y2)}).`,
+      hint:'Add the x\'s and halve. Add the y\'s and halve.', steps:[`x: (${sp(x1)} + ${sp(x2)}) ÷ 2 = ${sp(mx)}`,`y: (${sp(y1)} + ${sp(y2)}) ÷ 2 = ${sp(my)}`,`M = ${o(mx,my)}`]}); } },
+{ id:'func', name:'Functions (parabolas)', blurb:'y = a(x − p)² + q',
+  cup:`A parabola is a smile or a frown shape. In y = a(x − p)² + q, <b>p</b> slides it left or right, <b>q</b> lifts it up or down. The tip of the smile is the turning point (p; q). Watch the sign: (x − 3) means it moved <b>right</b> 3, not left. Sneaky.`,
+  rule:`Turning point of y = a(x − p)² + q is (p; q). &nbsp;a > 0: smile (minimum). &nbsp;a < 0: frown (maximum). &nbsp;y-intercept: put x = 0.`,
+  ex:{q:'Turning point of y = 2(x + 1)² − 5', steps:['(x + 1) is (x − (−1)), so p = −1.','q = −5.','Turning point: (−1; −5). a = 2 > 0, so it is a minimum.']},
+  pilot:'The highest point of a frown parabola is the peak height, like the top of a plane\'s climb in a zero-gravity flight.',
+  gen(){ const a=pick([1,2,3,-1,-2]), p=ri(-5,5), q=ri(-8,8); const inner = p===0?'x':`x${p>0?' − ':' + '}${Math.abs(p)}`; const eq=`y = ${a===1?'':a===-1?'−':a}(${inner})²${lin(q,'',false)}`;
+    if (Math.random()<0.55){ const o=(x,y)=>`(${sp(x)}; ${sp(y)})`;
+      return Object.assign(mc(o(p,q),[o(-p,q),o(p,-q),o(q,p),o(-p,-q)]),{q:`What is the turning point of <span class="math">${eq}</span>?`,
+        hint:'Turning point is (p; q). Flip the sign inside the bracket for p.', steps:[`Inside the bracket: (${inner}) → p = ${sp(p)}`,`The number at the end: q = ${sp(q)}`,`Turning point: ${o(p,q)}`]}); }
+    const yi=a*p*p+q; return {q:`Find the y-intercept of <span class="math">${eq}</span>.`, kind:'num', ans:yi, hint:'y-intercept: replace x with 0.',
+      steps:[`Put x = 0: y = ${a}(0${p>0?' − ':' + '}${Math.abs(p)})²${lin(q,'',false)}`,`(${sp(-p)})² = ${p*p}, times ${a} = ${a*p*p}`,`${a*p*p}${lin(q,'',false)} = ${sp(yi)}`]}; } },
+{ id:'trig', name:'Trigonometry', blurb:'SOH CAH TOA and angles',
+  cup:`In a right-angled triangle, sin, cos and tan are just <b>ratios</b>, like "for every 1 cupcake there are 2 sprinkles". <b>SOH CAH TOA</b>: Sin = Opposite/Hypotenuse, Cos = Adjacent/Hypotenuse, Tan = Opposite/Adjacent. Hypotenuse is always the longest side, across from the right angle.`,
+  rule:`sin θ = O/H &nbsp;·&nbsp; cos θ = A/H &nbsp;·&nbsp; tan θ = O/A. &nbsp;To find an angle, use the shift button: θ = tan⁻¹(O/A).`,
+  ex:{q:'A plane climbs along a 1000 m path at 10°. How high does it get?', steps:['Height is Opposite. Path is Hypotenuse. So use sin.','sin 10° = O/1000','O = 1000 × sin 10° = 173.6 m']},
+  pilot:'Every take-off and landing is trig. Pilots land on a glide slope of about 3°.',
+  gen(){ if (Math.random()<0.55){ const H=pick([500,800,1000,1200,1500,2000]), t=ri(5,35); const O=H*Math.sin(deg(t));
+      return {q:`A plane climbs along a straight path of ${H} m at an angle of ${t}° above the runway. How high is it (to 1 decimal)? Answer in metres.`, kind:'num', ans:r(O,1), tol:0.2, unit:'m',
+        hint:'Height is the side opposite the angle. Path is the hypotenuse. Which ratio uses O and H?', steps:['O and H → sin','sin '+t+'° = O ÷ '+H,`O = ${H} × sin ${t}° = ${r(O,1)} m`]}; }
+    const O=ri(30,300), A=ri(500,3000); const t=todeg(Math.atan(O/A));
+    return {q:`On approach, a plane is ${O} m high and ${A} m (along the ground) from the runway. What is its angle of descent (to 1 decimal)?`, kind:'num', ans:r(t,1), tol:0.2, unit:'°',
+      hint:'You have Opposite (height) and Adjacent (ground distance). Use tan, then shift tan.', steps:['O and A → tan',`tan θ = ${O} ÷ ${A} = ${r(O/A,4)}`,`θ = tan⁻¹(${r(O/A,4)}) = ${r(t,1)}°`]}; } },
+{ id:'fin', name:'Finance, growth & decay', blurb:'Compound interest, depreciation',
+  cup:`Compound interest is like cupcakes that make baby cupcakes, and then the babies make babies too. Each year you earn interest on your interest. Depreciation is the opposite: a car or drone loses value every year.`,
+  rule:`Compound growth: A = P(1 + i)ⁿ &nbsp;·&nbsp; Reducing-balance depreciation: A = P(1 − i)ⁿ. &nbsp;Write i as a decimal: 8% → 0.08.`,
+  ex:{q:'R10 000 saved at 8% compound interest for 3 years', steps:['P = 10 000, i = 0.08, n = 3','A = 10 000(1.08)³','A = R12 597.12']},
+  pilot:'Flight school is pricey. Saving early with compound interest helps pay for it.',
+  gen(){ const P=pick([5000,8000,10000,15000,20000]), ip=pick([6,7,8,9,10,12]), n=ri(2,6); const i=ip/100;
+    if (Math.random()<0.6){ const A=P*(1+i)**n; return {q:`Lilly saves R${P.toLocaleString('en-ZA')} for flight school at ${ip}% p.a. compound interest. How much after ${n} years? (to the nearest cent)`, kind:'num', ans:r(A,2), tol:0.6, unit:'R',
+      hint:'A = P(1 + i)ⁿ, with i as a decimal.', steps:[`P = ${P}, i = ${i}, n = ${n}`,`A = ${P}(1 + ${i})^${n} = ${P}(${r(1+i,2)})^${n}`,`A = R${r(A,2)}`]}; }
+    const A=P*(1-i)**n; return {q:`A training drone costs R${P.toLocaleString('en-ZA')} and depreciates at ${ip}% p.a. on the reducing balance. What is it worth after ${n} years?`, kind:'num', ans:r(A,2), tol:0.6, unit:'R',
+      hint:'Reducing balance: A = P(1 − i)ⁿ.', steps:[`P = ${P}, i = ${i}, n = ${n}`,`A = ${P}(1 − ${i})^${n} = ${P}(${r(1-i,2)})^${n}`,`A = R${r(A,2)}`]}; } },
+{ id:'prob', name:'Probability', blurb:'Or, and, mutually exclusive',
+  cup:`Probability is how likely something is, from 0 (never) to 1 (for sure). If you count the people who like chocolate cupcakes and the people who like vanilla, the ones who like <b>both</b> got counted twice. So you take them away once.`,
+  rule:`P(A or B) = P(A) + P(B) − P(A and B). &nbsp;Mutually exclusive (cannot happen together): P(A and B) = 0. &nbsp;Independent: P(A and B) = P(A) × P(B).`,
+  ex:{q:'P(A) = 0.5, P(B) = 0.3, P(A and B) = 0.1. Find P(A or B).', steps:['0.5 + 0.3 = 0.8','Take away the overlap: 0.8 − 0.1 = 0.7']},
+  pilot:'Airlines work out the probability of delays from weather and traffic to plan flights.',
+  gen(){ const v=ri(1,3);
+    if (v===3){ const a=ri(2,8)/10, b=ri(2,8)/10; return {q:`A and B are independent. P(A) = ${a} and P(B) = ${b}. Find P(A and B).`, kind:'num', ans:r(a*b,2), tol:0.005,
+      hint:'Independent → multiply.', steps:[`P(A and B) = ${a} × ${b} = ${r(a*b,2)}`]}; }
+    const a=ri(2,6)/10, b=ri(1,4)/10; const both = v===2?0:ri(1,Math.round(Math.min(a,b)*10))/10; const ans=r(a+b-both,2);
+    return {q:`P(A) = ${a}, P(B) = ${b}${v===2?' and A and B are <b>mutually exclusive</b>':', P(A and B) = '+both}. Find P(A or B).`, kind:'num', ans, tol:0.005,
+      hint: v===2?'Mutually exclusive means P(A and B) = 0.':'Add them, then take away the overlap.', steps:[`P(A) + P(B) = ${r(a+b,2)}`,`Take away P(A and B) = ${both}`,`P(A or B) = ${ans}`]}; } },
+{ id:'circle', name:'Euclidean geometry', blurb:'Circle theorems',
+  cup:`Imagine a round cake with a candle in the middle (the centre). An angle made at the centre is always <b>double</b> the angle made at the edge of the cake from the same two points. The centre sees twice as much.`,
+  rule:`Angle at centre = 2 × angle at circumference. &nbsp;Angle in a semicircle = 90°. &nbsp;Opposite angles of a cyclic quadrilateral add up to 180°. &nbsp;Always give a reason in brackets.`,
+  ex:{q:'Angle at circumference is 35°. Find the angle at the centre.', steps:['Angle at centre = 2 × angle at circumference','= 2 × 35° = 70° (∠ at centre = 2 × ∠ at circumference)']},
+  pilot:'Radar screens and navigation compasses are circles. These angle rules help work out bearings.',
+  gen(){ const v=ri(1,3);
+    if (v===1){ const x=ri(15,85); return {q:`In circle O, the angle at the circumference is ${x}°, subtended by the same arc as the angle at the centre. Find the angle at the centre.`, kind:'num', ans:2*x, unit:'°', hint:'The centre sees double.', steps:[`Centre angle = 2 × ${x}°`,`= ${2*x}° (∠ at centre = 2 × ∠ at circ.)`]}; }
+    if (v===2){ const x=ri(40,170)*1; const c=x%2?x+1:x; return {q:`The angle at the centre O is ${c}°. Find the angle at the circumference on the same arc.`, kind:'num', ans:c/2, unit:'°', hint:'Circumference angle is half the centre angle.', steps:[`${c}° ÷ 2 = ${c/2}°`]}; }
+    const a=ri(60,130); return {q:`ABCD is a cyclic quadrilateral. Angle A = ${a}°. Find angle C (opposite A).`, kind:'num', ans:180-a, unit:'°', hint:'Opposite angles in a cyclic quad add up to 180°.', steps:[`C = 180° − ${a}°`,`= ${180-a}° (opp. ∠s of cyclic quad)`]}; } },
+{ id:'stats', name:'Statistics', blurb:'Mean, median, range, standard deviation',
+  cup:`You and 4 friends ate 2, 3, 3, 5 and 7 cupcakes. The <b>mean</b> is "share them out equally": 20 ÷ 5 = 4 each. The <b>median</b> is the middle person when you line up from least to most: 3. <b>Standard deviation</b> tells you how spread out everyone is from the mean. Small = everyone ate about the same.`,
+  rule:`Mean x̄ = Σx ÷ n &nbsp;·&nbsp; Median = middle value (sorted) &nbsp;·&nbsp; Range = max − min &nbsp;·&nbsp; σ = √[Σ(x − x̄)² ÷ n] (use STAT mode on the calculator)`,
+  ex:{q:'Find the mean and median of 4; 8; 2; 6; 10', steps:['Add: 4 + 8 + 2 + 6 + 10 = 30. Divide by 5 → mean = 6.','Sort: 2; 4; 6; 8; 10. Middle value → median = 6.']},
+  pilot:'Airlines track on-time arrivals with statistics. A small standard deviation means flights are reliably on time.',
+  gen(){ const n=pick([5,7]); const d=Array.from({length:n},()=>ri(1,20)); const s=[...d].sort((a,b)=>a-b); const sum=d.reduce((a,b)=>a+b,0); const mean=sum/n; const v=ri(1,4); const list=d.join('; ');
+    if (v===1) return {q:`Find the mean of: <span class="math">${list}</span>`, kind:'num', ans:r(mean,2), tol:0.01, hint:'Add them all, divide by how many there are.', steps:[`Sum = ${sum}`,`n = ${n}`,`Mean = ${sum} ÷ ${n} = ${r(mean,2)}`]};
+    if (v===2) return {q:`Find the median of: <span class="math">${list}</span>`, kind:'num', ans:s[(n-1)/2], hint:'Sort from smallest to biggest first, then take the middle one.', steps:[`Sorted: ${s.join('; ')}`,`The middle (position ${(n+1)/2}) is ${s[(n-1)/2]}`]};
+    if (v===3) return {q:`Find the range of: <span class="math">${list}</span>`, kind:'num', ans:s[n-1]-s[0], hint:'Biggest minus smallest.', steps:[`Max = ${s[n-1]}, min = ${s[0]}`,`Range = ${s[n-1]-s[0]}`]};
+    const sd=Math.sqrt(d.reduce((a,x)=>a+(x-mean)**2,0)/n);
+    return {q:`Find the standard deviation of: <span class="math">${list}</span> (to 2 decimals)`, kind:'num', ans:r(sd,2), tol:0.02, hint:'Calculator: MODE → STAT → 1-VAR, enter the data, then find σx.', steps:[`Mean = ${r(mean,2)}`,'Square each (x − mean), add them, divide by n',`σ = √(${r(d.reduce((a,x)=>a+(x-mean)**2,0)/n,3)}) = ${r(sd,2)}`]}; } },
+{ id:'trigrules', name:'Sine, cosine & area rules', blurb:'Triangles without a right angle',
+  cup:`SOH CAH TOA only works with a 90° corner. For any other triangle you get three new tools. Think of them as different keys: <b>area rule</b> when you know two sides and the angle between them, <b>sine rule</b> when you have matching angle-and-opposite-side pairs, <b>cosine rule</b> for two sides and the angle in between when you want the third side.`,
+  rule:`Area = ½ab sin C &nbsp;·&nbsp; a/sin A = b/sin B &nbsp;·&nbsp; a² = b² + c² − 2bc cos A`,
+  ex:{q:'Area of a triangle with sides 8 cm and 5 cm and the angle 30° between them', steps:['Area = ½ × 8 × 5 × sin 30°','= 20 × 0.5','= 10 cm²']},
+  pilot:'Navigators use the sine and cosine rules to work out distances between three airports that do not form a right angle.',
+  gen(){ const v=ri(1,3);
+    if (v===1){ const a=ri(4,15), b=ri(4,15), C=ri(25,150); const A=0.5*a*b*Math.sin(deg(C)); return {q:`A triangle has sides ${a} cm and ${b} cm with an included angle of ${C}°. Find its area (to 1 decimal).`, kind:'num', ans:r(A,1), tol:0.15, unit:'cm²', hint:'Two sides and the angle between them → area rule.', steps:['Area = ½ab sin C',`= ½ × ${a} × ${b} × sin ${C}°`,`= ${r(A,1)} cm²`]}; }
+    if (v===2){ const A=ri(30,80), B=ri(30,80), b=ri(5,20); const a=b*Math.sin(deg(A))/Math.sin(deg(B)); return {q:`In △ABC, A = ${A}°, B = ${B}° and b = ${b} km. Find side a (to 1 decimal).`, kind:'num', ans:r(a,1), tol:0.15, unit:'km', hint:'Angle-side pairs → sine rule: a/sin A = b/sin B.', steps:['a/sin A = b/sin B',`a = ${b} × sin ${A}° ÷ sin ${B}°`,`a = ${r(a,1)} km`]}; }
+    const b=ri(5,20), c=ri(5,20), A=ri(30,120); const a=Math.sqrt(b*b+c*c-2*b*c*Math.cos(deg(A)));
+    return {q:`Two runways start at the same point: ${b} km and ${c} km long, with ${A}° between them. How far apart are their ends (to 1 decimal)?`, kind:'num', ans:r(a,1), tol:0.15, unit:'km', hint:'Two sides and the angle between → third side → cosine rule.', steps:['a² = b² + c² − 2bc cos A',`a² = ${b*b} + ${c*c} − 2(${b})(${c})cos ${A}°`,`a² = ${r(a*a,2)} → a = ${r(a,1)} km`]}; } },
+];
+
+/* ---------- PHYSICAL SCIENCES (Grade 11 CAPS) ---------- */
+const PHYS = [
+{ id:'vec', name:'Vectors in 2D', blurb:'Resultants and crosswinds',
+  cup:`A vector is a number <b>with a direction</b>, like "5 steps north". If you walk 3 steps east, then 4 steps north, you did not end up 7 steps away. You are 5 steps away in a straight line. That shortcut is the <b>resultant</b>.`,
+  rule:`Two vectors at 90°: R = √(x² + y²). &nbsp;Direction: θ = tan⁻¹(y/x).`,
+  ex:{q:'Plane flies 120 km/h north, wind pushes 50 km/h east. Resultant speed?', steps:['They are at 90°, so use Pythagoras.','R = √(120² + 50²) = √16 900','R = 130 km/h']},
+  pilot:'Crosswind landings! Pilots point the nose slightly into the wind so the resultant goes straight down the runway.',
+  gen(){ const k=pick([10,20,30]); const [a,b,c]=pick([[3,4,5],[5,12,13],[8,15,17],[7,24,25],[12,5,13]]); const A=a*k, W=b*k;
+    if (Math.random()<0.6) return {q:`A plane flies at ${A} km/h due north. A crosswind blows at ${W} km/h due east. What is the plane's resultant speed?`, kind:'num', ans:c*k, unit:'km/h',
+      hint:'The two vectors are at 90°. Use Pythagoras.', steps:[`R = √(${A}² + ${W}²)`,`= √(${A*A} + ${W*W}) = √${c*c*k*k}`,`R = ${c*k} km/h`]};
+    const t=todeg(Math.atan(W/A)); return {q:`A plane flies ${A} km/h north with a ${W} km/h crosswind from the west. By what angle is it pushed east of north (to 1 decimal)?`, kind:'num', ans:r(t,1), tol:0.2, unit:'°',
+      hint:'tan θ = opposite/adjacent = wind ÷ plane speed.', steps:[`tan θ = ${W} ÷ ${A} = ${r(W/A,4)}`,`θ = tan⁻¹(${r(W/A,4)}) = ${r(t,1)}° east of north`]}; } },
+{ id:'newton', name:"Newton's laws", blurb:'F = ma and weight',
+  cup:`Push a shopping trolley with 1 cupcake in it: it zooms. Fill it with 100 cupcakes: it barely moves. Same push, more mass, less acceleration. That is <b>F = ma</b>. And weight is just how hard Earth pulls on your mass.`,
+  rule:`F<sub>net</sub> = ma &nbsp;·&nbsp; w = mg (g = 9.8 m·s⁻²) &nbsp;·&nbsp; Units: F in newtons (N), m in kg, a in m·s⁻².`,
+  ex:{q:'A 1 200 kg plane accelerates at 3 m·s⁻². Net force?', steps:['F = ma','F = 1 200 × 3','F = 3 600 N']},
+  pilot:'Take-off: engines push (thrust), the plane accelerates down the runway. Heavier plane, longer runway needed.',
+  gen(){ const v=ri(1,3);
+    if (v===1){ const m=pick([800,1200,1500,2400,5000]), a=pick([1.5,2,2.5,3,4]); return {q:`A ${m} kg plane accelerates at ${a} m·s⁻² down the runway. Find the net force.`, kind:'num', ans:m*a, unit:'N', hint:'F = ma.', steps:['F = ma',`F = ${m} × ${a}`,`F = ${m*a} N`]}; }
+    if (v===2){ const m=pick([2,4,5,8,10,20]), F=m*pick([1,2,3,4,5]); return {q:`A net force of ${F} N acts on a ${m} kg box. What is its acceleration?`, kind:'num', ans:F/m, unit:'m·s⁻²', hint:'Rearrange F = ma → a = F ÷ m.', steps:['a = F ÷ m',`a = ${F} ÷ ${m} = ${F/m} m·s⁻²`]}; }
+    const m=ri(45,90); return {q:`Lilly's mass is ${m} kg. What is her weight on Earth? (g = 9.8 m·s⁻²)`, kind:'num', ans:r(m*9.8,1), tol:0.1, unit:'N', hint:'Weight is a force: w = mg.', steps:['w = mg',`w = ${m} × 9.8 = ${r(m*9.8,1)} N`,'Mass (kg) stays the same everywhere. Weight (N) changes with gravity.']}; } },
+{ id:'grav', name:'Gravitation', blurb:'Inverse square law',
+  cup:`Everything with mass pulls on everything else. Two cupcakes pull on each other a tiny bit! The pull gets weaker <b>fast</b> as they move apart: double the distance and the pull drops to a quarter, not a half.`,
+  rule:`F = G m₁m₂ / r². &nbsp;Double the distance → F ÷ 4. &nbsp;Triple → F ÷ 9. &nbsp;Double one mass → F × 2.`,
+  ex:{q:'F = 100 N. Distance doubles. New force?', steps:['F ∝ 1/r²','r × 2 → F ÷ 2² = F ÷ 4','100 ÷ 4 = 25 N']},
+  pilot:'Higher up, gravity is slightly weaker. Satellites and astronauts feel this big time.',
+  gen(){ const F=pick([36,72,100,144,200,360]); const cases=[['the distance between them doubles',F/4],['the distance between them triples',F/9],['the distance is halved',F*4],['one mass doubles',F*2],['both masses double',F*4],['one mass doubles and the distance doubles',F/2]];
+    const [what,ans]=pick(cases); const opts=[...new Set([F/4,F/2,F*2,F*4,F/9,F*9])].filter(x=>x!==ans).map(f);
+    return Object.assign(mc(f(ans)+' N',shuffle(opts).map(x=>x+' N')),{q:`The gravitational force between two objects is ${F} N. What is the force if ${what}?`,
+      hint:'Mass on top (multiply), distance squared on the bottom (divide by the square).', steps:['F = Gm₁m₂/r²',`Apply the change: ${what}`,`New F = ${f(ans)} N`]}); } },
+{ id:'elec', name:'Electrostatics', blurb:"Coulomb's law",
+  cup:`Rub a balloon on your hair and it sticks to the wall. Charges: <b>like charges repel</b> (push away), <b>unlike charges attract</b> (pull together). Same inverse-square vibe as gravity: further apart, much weaker.`,
+  rule:`F = kQ₁Q₂ / r² (k = 9 × 10⁹ N·m²·C⁻²). &nbsp;Like charges repel, unlike attract. &nbsp;Charge is measured in coulombs (C).`,
+  ex:{q:'Force is 12 N. Distance halves. New force?', steps:['Distance ÷ 2 → force × 2² = × 4','12 × 4 = 48 N']},
+  pilot:'Planes build up static charge in flight. Static wicks on the wings let it escape safely.',
+  gen(){ if (Math.random()<0.4){ const items=[['A positive and a negative charge','attract'],['Two positive charges','repel'],['Two negative charges','repel'],['A negative and a positive charge','attract']]; const [a,ans]=pick(items);
+      return Object.assign(mc(ans,['attract','repel','do nothing','cancel out']),{q:`${a} are placed near each other. They will…`, hint:'Opposites attract, likes repel.', steps:[`${a}: ${ans==='attract'?'unlike charges → attract':'like charges → repel'}`]}); }
+    const F=pick([8,12,20,36,48]); const cases=[['the distance doubles',F/4],['the distance is halved',F*4],['one charge doubles',F*2],['both charges double',F*4],['the distance triples',F/9]]; const [what,ans]=pick(cases);
+    const opts=[...new Set([F/4,F/2,F*2,F*4,F/9])].filter(x=>x!==ans).map(f);
+    return Object.assign(mc(f(ans)+' N',shuffle(opts).map(x=>x+' N')),{q:`Two charges exert a force of ${F} N on each other. What is the force if ${what}?`, hint:'Charges on top, distance squared on the bottom.', steps:['F = kQ₁Q₂/r²',`Change: ${what}`,`New F = ${f(ans)} N`]}); } },
+{ id:'circ', name:'Electric circuits', blurb:"Ohm's law, series & parallel",
+  cup:`Think of water in a pipe. <b>Voltage</b> is the push, <b>current</b> is how much water flows, <b>resistance</b> is how narrow the pipe is. In <b>series</b> the resistors line up (harder to get through, add them). In <b>parallel</b> there are extra lanes (easier, total goes down).`,
+  rule:`V = IR &nbsp;·&nbsp; Series: R = R₁ + R₂ + … &nbsp;·&nbsp; Parallel (two): R = R₁R₂/(R₁ + R₂). &nbsp;Units: V volts, I amps, R ohms (Ω).`,
+  ex:{q:'6 Ω and 3 Ω in parallel', steps:['R = (6 × 3)/(6 + 3)','= 18/9','= 2 Ω (always smaller than the smallest one)']},
+  pilot:'The cockpit has hundreds of circuits. If one light fails in parallel wiring, the others stay on.',
+  gen(){ const v=ri(1,4);
+    if (v===1){ const I=pick([0.5,1,1.5,2,3]), R=pick([4,6,10,12,20]); return {q:`A current of ${I} A flows through a ${R} Ω resistor. Find the potential difference.`, kind:'num', ans:I*R, unit:'V', hint:'V = IR.', steps:['V = IR',`V = ${I} × ${R} = ${I*R} V`]}; }
+    if (v===2){ const R=pick([2,4,5,8,10]), V=R*pick([1,2,3,6]); return {q:`A ${V} V battery is connected to a ${R} Ω resistor. Find the current.`, kind:'num', ans:V/R, unit:'A', hint:'Rearrange: I = V ÷ R.', steps:['I = V ÷ R',`I = ${V} ÷ ${R} = ${V/R} A`]}; }
+    if (v===3){ const a=ri(2,12), b=ri(2,12), c=ri(1,10); return {q:`Resistors of ${a} Ω, ${b} Ω and ${c} Ω are in series. Total resistance?`, kind:'num', ans:a+b+c, unit:'Ω', hint:'Series: just add.', steps:[`R = ${a} + ${b} + ${c} = ${a+b+c} Ω`]}; }
+    const [a,b,ans]=pick([[6,3,2],[12,6,4],[10,10,5],[20,5,4],[4,12,3],[8,8,4],[30,15,10]]); return {q:`A ${a} Ω and a ${b} Ω resistor are in parallel. Total resistance?`, kind:'num', ans, unit:'Ω', hint:'Product over sum: (R₁ × R₂) ÷ (R₁ + R₂).', steps:[`R = (${a} × ${b}) ÷ (${a} + ${b})`,`= ${a*b} ÷ ${a+b}`,`= ${ans} Ω`]}; } },
+{ id:'optics', name:'Geometrical optics', blurb:"Refraction, Snell's law",
+  cup:`Put a straw in a glass of water: it looks bent. Light slows down when it goes from air into water, so it changes direction. Like a trolley rolling from smooth tiles onto grass: one wheel slows first and it turns.`,
+  rule:`n₁ sin θ₁ = n₂ sin θ₂ &nbsp;·&nbsp; Critical angle: sin c = n₂/n₁ (from dense to less dense). &nbsp;Air n = 1.00, water 1.33, glass 1.50.`,
+  ex:{q:'Light goes from air (1.00) into glass (1.50) at 30°. Refraction angle?', steps:['1.00 × sin 30° = 1.50 × sin θ₂','sin θ₂ = 0.5 ÷ 1.50 = 0.333','θ₂ = sin⁻¹(0.333) = 19.5°']},
+  pilot:'Mirages over hot runways are refraction. So is the shimmer you see from the cockpit on a hot day.',
+  gen(){ const mats=[['water',1.33],['glass',1.50],['diamond',2.42]]; const [name,n]=pick(mats);
+    if (Math.random()<0.65){ const t1=ri(15,60); const t2=todeg(Math.asin(Math.sin(deg(t1))/n));
+      return {q:`Light travels from air (n = 1.00) into ${name} (n = ${n}) at an angle of incidence of ${t1}°. Find the angle of refraction (to 1 decimal).`, kind:'num', ans:r(t2,1), tol:0.2, unit:'°',
+        hint:'n₁ sin θ₁ = n₂ sin θ₂. Solve for sin θ₂, then shift sin.', steps:[`1.00 × sin ${t1}° = ${n} × sin θ₂`,`sin θ₂ = ${r(Math.sin(deg(t1)),4)} ÷ ${n} = ${r(Math.sin(deg(t1))/n,4)}`,`θ₂ = ${r(t2,1)}°`]}; }
+    const c=todeg(Math.asin(1/n)); return {q:`Find the critical angle for light going from ${name} (n = ${n}) into air (to 1 decimal).`, kind:'num', ans:r(c,1), tol:0.2, unit:'°', hint:'sin c = 1.00 ÷ n of the denser material.', steps:[`sin c = 1.00 ÷ ${n} = ${r(1/n,4)}`,`c = sin⁻¹(${r(1/n,4)}) = ${r(c,1)}°`]}; } },
+{ id:'moles', name:'Moles & chemical change', blurb:'n = m/M and concentration',
+  cup:`A mole is just a counting word, like "a dozen" means 12. A mole means 6.02 × 10²³ particles. Molar mass (M) is how heavy one mole is. So if a dozen cupcakes weigh 600 g, then 1 200 g is 2 dozen. Same with moles: n = m ÷ M.`,
+  rule:`n = m/M &nbsp;·&nbsp; c = n/V (V in dm³) &nbsp;·&nbsp; Units: n mol, m g, M g·mol⁻¹, c mol·dm⁻³.`,
+  ex:{q:'How many moles in 36 g of water (M = 18 g·mol⁻¹)?', steps:['n = m ÷ M','n = 36 ÷ 18','n = 2 mol']},
+  pilot:'Jet fuel burning is a chemical reaction. Engineers use moles to work out how much oxygen the engines need.',
+  gen(){ const subs=[['water (H₂O)',18],['carbon dioxide (CO₂)',44],['sodium chloride (NaCl)',58.5],['oxygen gas (O₂)',32],['calcium carbonate (CaCO₃)',100],['methane (CH₄)',16]]; const [s,M]=pick(subs); const v=ri(1,3);
+    if (v===1){ const n=pick([0.25,0.5,1,1.5,2,3]); const m=n*M; return {q:`How many moles are in ${f(m)} g of ${s}? (M = ${M} g·mol⁻¹)`, kind:'num', ans:n, unit:'mol', hint:'n = m ÷ M.', steps:['n = m ÷ M',`n = ${f(m)} ÷ ${M} = ${n} mol`]}; }
+    if (v===2){ const n=pick([0.2,0.5,2,4]); return {q:`What is the mass of ${n} mol of ${s}? (M = ${M} g·mol⁻¹)`, kind:'num', ans:r(n*M,2), unit:'g', hint:'Rearrange: m = n × M.', steps:['m = n × M',`m = ${n} × ${M} = ${r(n*M,2)} g`]}; }
+    const n=pick([0.1,0.2,0.5,1]), V=pick([0.25,0.5,2]); return {q:`${n} mol of sodium chloride is dissolved to make ${V} dm³ of solution. Find the concentration.`, kind:'num', ans:r(n/V,3), unit:'mol·dm⁻³', hint:'c = n ÷ V, with V in dm³.', steps:['c = n ÷ V',`c = ${n} ÷ ${V} = ${r(n/V,3)} mol·dm⁻³`]}; } },
+{ id:'gas', name:'Ideal gases', blurb:"Boyle's & Charles' laws",
+  cup:`Squash a balloon and it pushes back harder: smaller space, more pressure (<b>Boyle</b>). Put a balloon in the sun and it gets bigger: hotter gas takes more space (<b>Charles</b>). Temperature <b>must</b> be in kelvin: add 273.`,
+  rule:`Boyle (T constant): p₁V₁ = p₂V₂ &nbsp;·&nbsp; Charles (p constant): V₁/T₁ = V₂/T₂ &nbsp;·&nbsp; T(K) = T(°C) + 273 &nbsp;·&nbsp; pV = nRT`,
+  ex:{q:'2 L of gas at 100 kPa is squeezed to 50 kPa? No, to 200 kPa. New volume?', steps:['p₁V₁ = p₂V₂','100 × 2 = 200 × V₂','V₂ = 1 L']},
+  pilot:'Cabins are pressurised because air pressure drops as you climb. Your chips packet puffs up on a flight for this exact reason.',
+  gen(){ if (Math.random()<0.55){ const p1=100, V1=pick([2,3,4,5,6]), p2=pick([25,50,80,125,200,250]); const V2=p1*V1/p2;
+      return {q:`A chips packet holds ${V1} L of air at ${p1} kPa on the ground. In the plane the pressure is ${p2} kPa (same temperature). What is the new volume? (to 2 decimals)`, kind:'num', ans:r(V2,2), tol:0.01, unit:'L',
+        hint:'Boyle\'s law: p₁V₁ = p₂V₂.', steps:['p₁V₁ = p₂V₂',`${p1} × ${V1} = ${p2} × V₂`,`V₂ = ${p1*V1} ÷ ${p2} = ${r(V2,2)} L`, p2<p1?'Lower pressure → bigger volume. Packet puffs up!':'Higher pressure → smaller volume.']}; }
+    const V1=pick([2,3,4,5]), c1=pick([0,7,27,17]), c2=pick([77,127,57,87]); const T1=c1+273, T2=c2+273; const V2=V1*T2/T1;
+    return {q:`A balloon holds ${V1} dm³ at ${c1} °C. It is heated to ${c2} °C at constant pressure. Find the new volume (to 2 decimals).`, kind:'num', ans:r(V2,2), tol:0.01, unit:'dm³',
+      hint:'Charles\' law, and convert °C to kelvin first (+273)!', steps:[`T₁ = ${c1} + 273 = ${T1} K, T₂ = ${c2} + 273 = ${T2} K`,`V₂ = V₁ × T₂ ÷ T₁ = ${V1} × ${T2} ÷ ${T1}`,`V₂ = ${r(V2,2)} dm³`]}; } },
+{ id:'imf', name:'Intermolecular forces', blurb:'What holds molecules together',
+  cup:`Intermolecular forces are like how strongly cupcakes stick together in the box. Stronger stickiness → you need more heat to pull them apart → higher boiling point. Water is extra sticky because of <b>hydrogen bonds</b>.`,
+  rule:`Strength: hydrogen bonds > dipole-dipole > London (induced dipole) forces. &nbsp;Stronger IMFs → higher boiling point, lower vapour pressure.`,
+  ex:{q:'Why does water boil at 100 °C but methane at −162 °C?', steps:['Water has hydrogen bonds (H bonded to O).','Methane only has weak London forces.','Stronger forces need more energy → higher boiling point.']},
+  pilot:'De-icing fluid on planes works because of how its molecules interact with water molecules.',
+  gen(){ const bank=[
+      ['Which force exists between water (H₂O) molecules?','hydrogen bonds',['London forces only','ionic bonds','metallic bonds']],
+      ['Which has the highest boiling point?','H₂O (hydrogen bonds)',['CH₄ (London forces)','CO₂ (London forces)','O₂ (London forces)']],
+      ['Stronger intermolecular forces mean the boiling point is…','higher',['lower','the same','zero']],
+      ['Which is the weakest intermolecular force?','London (induced dipole) forces',['hydrogen bonds','dipole-dipole forces','covalent bonds']],
+      ['Stronger IMFs mean the vapour pressure is…','lower',['higher','unchanged','infinite']],
+      ['HCl molecules are polar. The main force between them is…','dipole-dipole forces',['hydrogen bonds','ionic bonds','no forces']]];
+    const [q,a,w]=pick(bank); return Object.assign(mc(a,w),{q, hint:'Order: hydrogen bonds > dipole-dipole > London.', steps:[`Answer: ${a}`]}); } },
+{ id:'efield', name:'Electric fields', blurb:'E = F/q and field lines',
+  cup:`An electric field is like the smell around a bakery: the closer you get, the stronger it is. A charge creates a "zone" around it. Any other charge that walks into the zone feels a push or a pull. Field lines point the way a <b>positive</b> test charge would be pushed: away from +, towards −.`,
+  rule:`E = F/q (N·C⁻¹) &nbsp;·&nbsp; E = kQ/r² &nbsp;·&nbsp; Field lines: out of positive, into negative, never cross.`,
+  ex:{q:'A 0.002 C charge feels a 10 N force. Field strength?', steps:['E = F ÷ q','E = 10 ÷ 0.002','E = 5 000 N·C⁻¹']},
+  pilot:'Lightning is a giant electric field breaking down the air. Planes are built so the charge flows around the outside and the cabin stays safe.',
+  gen(){ if (Math.random()<0.6){ const q=pick([0.001,0.002,0.004,0.005]), F=pick([2,4,5,8,10,20]); return {q:`A charge of ${q} C experiences a force of ${F} N in an electric field. Find the field strength.`, kind:'num', ans:r(F/q,2), unit:'N·C⁻¹', hint:'E = F ÷ q.', steps:['E = F ÷ q',`E = ${F} ÷ ${q} = ${f(F/q)} N·C⁻¹`]}; }
+    const bank=[['Electric field lines around a positive charge point…','outwards, away from the charge',['inwards, towards the charge','in circles around it','nowhere, there are no lines']],
+      ['Where field lines are closer together, the field is…','stronger',['weaker','zero','the same everywhere']],
+      ['The direction of an electric field is the direction of the force on a…','positive test charge',['negative test charge','neutron','electron']],
+      ['Can electric field lines cross each other?','No, never',['Yes, always','Only near negative charges','Only in metals']]];
+    const [q,a,w]=pick(bank); return Object.assign(mc(a,w),{q, hint:'Think: which way would a tiny positive charge get pushed?', steps:[`Answer: ${a}`]}); } },
+{ id:'energy', name:'Energy & chemical change', blurb:'Exothermic, endothermic, ΔH',
+  cup:`Some reactions give out heat, like a fire or a hand warmer: <b>exothermic</b> (exit = heat leaves). Others take heat in and feel cold, like a cold pack: <b>endothermic</b> (enter = heat comes in). ΔH is the energy change. Negative ΔH means energy left the reaction.`,
+  rule:`Exothermic: ΔH < 0, products have less energy. &nbsp;Endothermic: ΔH > 0, products have more energy. &nbsp;Activation energy: the energy needed to start a reaction.`,
+  ex:{q:'Burning jet fuel: exothermic or endothermic?', steps:['It releases heat and light.','Energy leaves → exothermic.','ΔH is negative.']},
+  pilot:'Jet engines run on a huge exothermic reaction: fuel plus oxygen releases the energy that pushes the plane.',
+  gen(){ const bank=[['Combustion of fuel is…','exothermic, ΔH < 0',['endothermic, ΔH > 0','exothermic, ΔH > 0','neither']],
+      ['Photosynthesis (plants using sunlight to make glucose) is…','endothermic, ΔH > 0',['exothermic, ΔH < 0','endothermic, ΔH < 0','neither']],
+      ['In an exothermic reaction, the products have…','less energy than the reactants',['more energy than the reactants','the same energy','no energy']],
+      ['The minimum energy needed to start a reaction is the…','activation energy',['heat of reaction','kinetic energy','ΔH']],
+      ['A cold pack gets cold when you squeeze it. The reaction is…','endothermic',['exothermic','nuclear','not a reaction']],
+      ['If ΔH = −286 kJ·mol⁻¹, the reaction…','releases energy (exothermic)',['absorbs energy (endothermic)','has no energy change','is impossible']]];
+    const [q,a,w]=pick(bank); return Object.assign(mc(a,w),{q, hint:'EXothermic = heat EXits (ΔH negative). ENdothermic = heat ENters (ΔH positive).', steps:[`Answer: ${a}`]}); } },
+{ id:'acids', name:'Acids & bases', blurb:'Proton donors and conjugate pairs',
+  cup:`In chemistry, a proton is an H⁺. A <b>Lowry-Brønsted acid</b> is a "giver": it donates an H⁺. A <b>base</b> is a "taker": it accepts an H⁺. When the acid gives away its H⁺, what is left behind is its <b>conjugate base</b>. Like a cupcake that gave away its cherry: still a cupcake, just one cherry less.`,
+  rule:`Acid = proton (H⁺) donor &nbsp;·&nbsp; Base = proton acceptor &nbsp;·&nbsp; Conjugate base = acid minus one H⁺ &nbsp;·&nbsp; Ampholyte: can act as acid or base (e.g. H₂O)`,
+  ex:{q:'HCl + H₂O → H₃O⁺ + Cl⁻. Name the acid and its conjugate base.', steps:['HCl gives away an H⁺ → HCl is the acid.','What is left: Cl⁻ → conjugate base.','H₂O took the H⁺ → it acted as the base.']},
+  pilot:'Battery acid in aircraft batteries and corrosion on metal parts both come down to acid-base chemistry.',
+  gen(){ const bank=[['According to Lowry-Brønsted, an acid is a…','proton (H⁺) donor',['proton acceptor','electron donor','OH⁻ acceptor']],
+      ['What is the conjugate base of HCl?','Cl⁻',['H₂O','H₃O⁺','HCl₂']],
+      ['What is the conjugate acid of NH₃?','NH₄⁺',['NH₂⁻','H₂O','N₂']],
+      ['A substance that can act as an acid AND a base is called…','an ampholyte',['a catalyst','an indicator','an isotope']],
+      ['A solution with pH 3 is…','acidic',['basic (alkaline)','neutral','salty']],
+      ['In HNO₃ + H₂O → H₃O⁺ + NO₃⁻, which substance is the base?','H₂O',['HNO₃','H₃O⁺','NO₃⁻']]];
+    const [q,a,w]=pick(bank); return Object.assign(mc(a,w),{q, hint:'Acid gives H⁺. Base takes H⁺. Conjugate = what is left after the swap.', steps:[`Answer: ${a}`]}); } },
+];
+
+/* ---------- OTHER SUBJECTS: quick-fire flashcards ---------- */
+const OTHER = {
+ 'Geography':[['Weather','The state of the air on a particular day: rain, wind, temperature right now.'],['Climate','The average weather of a place over about 30 years.'],['Tropical cyclone','A huge spinning storm over warm oceans (above 26.5 °C), with very low pressure in the eye.'],['ITCZ','Inter-Tropical Convergence Zone: where trade winds meet near the equator. Lots of rising air and rain.'],['Drainage basin','All the land that drains its water into one river.'],['Watershed','The high ground that separates two drainage basins.'],['Development','Improving people\'s quality of life: income, health, education.'],['GDP','Gross Domestic Product: the total value of goods and services a country makes in a year.'],['Soil erosion','When wind or water removes the top layer of soil.'],['Mid-latitude cyclone','A low-pressure system with cold and warm fronts, brings Cape Town its winter rain.']],
+ 'Accounting':[['Asset','Something the business owns that has value: cash, equipment, vehicles.'],['Liability','What the business owes to others: loans, creditors.'],['Owner\'s equity','What the business owes the owner: Assets − Liabilities.'],['Accounting equation','Assets = Owner\'s equity + Liabilities. It must always balance.'],['Debit','Left side of an account.'],['Credit','Right side of an account.'],['Depreciation','The drop in value of a fixed asset over time, e.g. a vehicle.'],['Partnership','A business owned by 2 to 20 partners who share profits.'],['Income statement','Shows income minus expenses = profit or loss for a period.'],['GAAP','Generally Accepted Accounting Practice: the rules everyone follows.']],
+ 'English':[['Metaphor','Says something IS something else: "She is a shining star."'],['Simile','Compares using like or as: "as brave as a lion".'],['Personification','Giving human qualities to non-human things: "The wind whispered."'],['Hyperbole','Big exaggeration: "I have told you a million times."'],['Irony','When the opposite of what you expect happens, or is meant.'],['Oxymoron','Two opposite words together: "deafening silence".'],['Alliteration','Repeating the first sound: "Lilly loves landing lightly."'],['Onomatopoeia','A word that sounds like what it is: "buzz", "boom".'],['Theme','The main message or lesson of a text.'],['Tone','The writer\'s attitude: angry, hopeful, sarcastic.']],
+ 'Afrikaans':[['Selfstandige naamwoord','Noun: a person, place or thing (die vliegtuig).'],['Werkwoord','Verb: an action word (vlieg, land).'],['Byvoeglike naamwoord','Adjective: describes a noun (die vinnige vliegtuig).'],['Bywoord','Adverb: describes how/when/where (sy vlieg vinnig).'],['Voorsetsel','Preposition: in, op, onder, langs.'],['Verlede tyd','Past tense: het + ge- (Ek het gevlieg).'],['Toekomende tyd','Future tense: sal + verb (Ek sal vlieg).'],['Lydende vorm','Passive voice: word/is + ge- (Die brief word geskryf).'],['Indirekte rede','Reported speech: Sy sê dat sy moeg is.'],['Ontkenning','Negative: nie … nie (Ek vlieg nie vandag nie).']],
+ 'Life Orientation':[['Self-esteem','How much you value and respect yourself.'],['SMART goal','Specific, Measurable, Achievable, Realistic, Time-bound.'],['Peer pressure','Influence from friends to act a certain way.'],['Stress','Your body\'s reaction to pressure or a challenge.'],['Career','Your long-term work path. Lilly\'s: commercial pilot.'],['NSC requirements for aviation','Pilot training usually needs Mathematics and Physical Sciences, good marks in both.'],['Human rights','Rights everyone has, protected by the Bill of Rights in the Constitution.'],['Time management','Planning how to use your hours so the important stuff gets done.']],
+};
+
+/* ---------- handbook ---------- */
+const TERMS = {
+ Maths:[['Exponent','The small raised number. Tells you how many times to multiply the base.'],['Base','The big number being multiplied in a power.'],['Surd','A root that does not come out to a whole number, like √2.'],['Coefficient','The number in front of a letter: in 3x, it is 3.'],['Factorise','Write as a product of brackets.'],['Root (of an equation)','A value of x that makes the equation true.'],['Gradient (m)','Steepness: up ÷ across.'],['Midpoint','The point exactly halfway between two points.'],['Turning point','The tip of a parabola: the minimum or maximum.'],['Axis of symmetry','The vertical line through the turning point, x = p.'],['Hypotenuse','Longest side of a right-angled triangle, opposite the 90°.'],['Principal (P)','The starting amount of money.'],['Compound interest','Interest earned on the interest too.'],['Depreciation','Losing value over time.'],['Mutually exclusive','Events that cannot happen at the same time.'],['Independent events','One event does not change the other\'s probability.'],['Chord','A line joining two points on a circle.'],['Tangent','A line that touches a circle at exactly one point.'],['Cyclic quadrilateral','A four-sided shape with all corners on a circle.']],
+ Physics:[['Vector','A quantity with size AND direction: velocity, force.'],['Scalar','Size only, no direction: mass, time, speed.'],['Resultant','The single vector that has the same effect as all the vectors together.'],['Net force','The total force after adding all forces with their directions.'],['Inertia','An object\'s resistance to changing its motion (Newton\'s 1st law).'],['Mass','How much matter something has (kg). Same everywhere.'],['Weight','The pull of gravity on a mass (N). w = mg.'],['Newton (N)','The unit of force.'],['Coulomb (C)','The unit of charge.'],['Current (I)','Rate of flow of charge, in amperes (A).'],['Potential difference (V)','The "push" per charge between two points, in volts.'],['Resistance (R)','How much a component opposes current, in ohms (Ω).'],['emf','The voltage of a battery when no current flows.'],['Refraction','Light bending as it changes speed between materials.'],['Refractive index (n)','How much a material slows light. Air 1.00, glass 1.50.'],['Critical angle','The angle above which light reflects back totally instead of escaping.'],['Mole','6.02 × 10²³ particles. A chemistry "dozen".'],['Molar mass (M)','Mass of one mole, in g·mol⁻¹.'],['Concentration (c)','Moles per dm³ of solution.'],['Kelvin (K)','Temperature scale for gas laws. K = °C + 273.']],
+};
+const FORMULAS = {
+ Maths:[['a^m × a^n = a^(m+n)','Multiply same base → add exponents'],['x = [−b ± √(b² − 4ac)] / 2a','Quadratic formula, works when factorising does not'],['Tn = an² + bn + c','Quadratic pattern. 2a = second difference'],['m = (y₂ − y₁)/(x₂ − x₁)','Gradient'],['d = √[(x₂ − x₁)² + (y₂ − y₁)²]','Distance between two points'],['M = ((x₁+x₂)/2 ; (y₁+y₂)/2)','Midpoint'],['y = a(x − p)² + q','Parabola, turning point (p; q)'],['sin θ = O/H, cos θ = A/H, tan θ = O/A','SOH CAH TOA'],['sin²θ + cos²θ = 1','Square identity'],['a/sin A = b/sin B','Sine rule'],['a² = b² + c² − 2bc cos A','Cosine rule'],['Area = ½ab sin C','Area rule'],['A = P(1 + i)ⁿ','Compound growth'],['A = P(1 − i)ⁿ','Reducing-balance depreciation'],['P(A or B) = P(A) + P(B) − P(A and B)','Addition rule']],
+ Physics:[['R = √(x² + y²)','Resultant of perpendicular vectors'],['F_net = ma','Newton\'s 2nd law'],['w = mg','Weight, g = 9.8 m·s⁻²'],['F = Gm₁m₂/r²','Newton\'s law of gravitation, G = 6.67 × 10⁻¹¹'],['F = kQ₁Q₂/r²','Coulomb\'s law, k = 9 × 10⁹'],['E = F/q','Electric field'],['V = IR','Ohm\'s law'],['R = R₁ + R₂','Series'],['1/R = 1/R₁ + 1/R₂','Parallel'],['n₁ sin θ₁ = n₂ sin θ₂','Snell\'s law'],['n = m/M','Moles from mass'],['c = n/V','Concentration'],['p₁V₁ = p₂V₂','Boyle\'s law'],['V₁/T₁ = V₂/T₂','Charles\' law (kelvin!)'],['pV = nRT','Ideal gas equation, R = 8.31']],
+};
+
+/* short lessons for the other subjects */
+const NOTES = {
+ 'Geography':[
+  {t:'Weather vs climate', cup:'Weather is today\'s outfit. Climate is your whole wardrobe: what you usually wear over many years.', pts:['Weather = short term (hours, days)','Climate = average over about 30 years','Cape Town: winter rainfall (Mediterranean climate). Joburg: summer rainfall with thunderstorms.']},
+  {t:'Mid-latitude cyclones', cup:'Picture a spinning wheel of cold and warm air that rolls in from the ocean and brings Cape Town its winter rain and wind.', pts:['Low pressure system, forms between 30° and 60° latitude','Has a cold front (fast, heavy rain) and a warm front (slow, drizzle)','Southern Hemisphere: spins clockwise']},
+  {t:'Tropical cyclones', cup:'A giant storm engine powered by warm sea water. The warmer the sea, the stronger it gets.', pts:['Needs sea temperature above 26.5 °C','Calm eye in the middle, strongest winds in the eye wall','Dies when it moves over land or cold water (fuel cut off)']}],
+ 'Accounting':[
+  {t:'The accounting equation', cup:'Everything the business owns (assets) was paid for either by the owner (equity) or by borrowing (liabilities). So both sides must always balance, like a see-saw.', pts:['A = OE + L','Every transaction changes at least two things','If one side goes up and the other does not, check your work']},
+  {t:'Debit and credit', cup:'Debit is the left side, credit is the right side. That is all, chommie. Do not overthink the words.', pts:['Assets and expenses increase on the debit side','Liabilities, equity and income increase on the credit side','Total debits must equal total credits (trial balance)']},
+  {t:'Depreciation', cup:'A new car loses value every year, even if you look after it. In accounting we record that loss as depreciation.', pts:['Straight-line: same amount every year (on cost)','Diminishing balance: percentage of what is left (carrying value)','Depreciation is an expense on the income statement']}],
+ 'English':[
+  {t:'Figures of speech', cup:'They are like toppings on a cupcake: the cupcake (the meaning) is the same, but the topping makes it memorable.', pts:['Simile uses "like" or "as"; metaphor does not','Personification gives human qualities to things','In the exam: name it, quote it, explain the effect']},
+  {t:'Answering a poetry question', cup:'Say WHAT the poet did, WHERE (quote), and WHY it matters (effect). That is the full meal.', pts:['Identify: "The poet uses a metaphor…"','Quote: "…in the line \'the city is a jungle\'…"','Effect: "…to show how dangerous and wild the city feels."']}],
+ 'Afrikaans':[
+  {t:'Tye (tenses)', cup:'Afrikaans tenses are easier than English. Past tense is mostly "het" + "ge-" and future is "sal".', pts:['Present: Ek vlieg.','Past: Ek het gevlieg.','Future: Ek sal vlieg.']},
+  {t:'Ontkenning (negatives)', cup:'Afrikaans says no twice: "nie" goes in, and another "nie" goes at the end. Double no, no stress.', pts:['Ek vlieg nie vandag nie.','Hy het nie gekom nie.','Niemand, niks, nooit also need the last "nie": Ek sien niks nie.']},
+  {t:'Lydende vorm (passive)', cup:'Active: Lilly flies the plane. Passive: The plane is flown by Lilly. The thing being done-to moves to the front.', pts:['Present: Die brief word deur haar geskryf.','Past: Die brief is deur haar geskryf.','Future: Die brief sal deur haar geskryf word.']}],
+ 'Life Orientation':[
+  {t:'SMART goals', cup:'"I want to do better in maths" is a wish. "I will get 50% in the June maths test by practising 20 minutes a day" is a SMART goal.', pts:['Specific: what exactly?','Measurable: how will I know?','Achievable, Realistic, Time-bound: by when?']},
+  {t:'Becoming a pilot', cup:'Your subjects now are the first part of your flight plan.', pts:['Keep Mathematics and Physical Sciences, both are usually required','Check entry levels for flight schools and airline cadet programmes','Medical certificate and flight training come after matric']}],
+};
+
+const ALL = [...MATHS.map(t=>({...t,sub:'Maths'})), ...PHYS.map(t=>({...t,sub:'Physics'}))];
+/* quiz topics for the other subjects, built from their flashcards */
+const DECKS = Object.keys(OTHER).map(s=>({ id:'deck-'+s, name:s+' terms', sub:s, gen(){ const cards=OTHER[s]; const c=pick(cards); const others=shuffle(cards.filter(x=>x!==c)).slice(0,3).map(x=>x[0]);
+  return Object.assign(mc(c[0],others),{q:`Which term matches this?<br><b>${esc(c[1])}</b>`, hint:'Read it slowly. Which word have you seen next to this meaning?', steps:[`${esc(c[0])}: ${esc(c[1])}`]}); } }));
+function customTopic(id){ const c=(S.custom||[]).find(x=>x.id===id); if(!c) return null; let k=0; return {id:c.id, name:c.name, sub:c.sub||'My papers', gen(){ const q=c.qs[k++ % c.qs.length]; return JSON.parse(JSON.stringify(q)); }}; }
+const byId = id => ALL.find(t=>t.id===id) || DECKS.find(t=>t.id===id) || customTopic(id);
+
+/* ---------- views ---------- */
+let view = {tab:'home'};
+const app = $('#app');
+function go(v){ view = v; render(); window.scrollTo({top:0}); }
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>go({tab:b.dataset.tab})));
+
+function altimeter(){
+  const k = rankOf(S.xp); const pct = k.next ? (S.xp-k.base)/(k.next-k.base) : 1;
+  const C = 2*Math.PI*46; const dash = C*Math.max(0.02,pct);
+  let ticks=''; for(let i=0;i<10;i++){ const a=i/10*2*Math.PI-Math.PI/2; ticks+=`<line x1="${56+40*Math.cos(a)}" y1="${56+40*Math.sin(a)}" x2="${56+34*Math.cos(a)}" y2="${56+34*Math.sin(a)}" stroke="var(--muted)" stroke-width="2"/>`; }
+  return `<svg class="alt" viewBox="0 0 112 112" role="img" aria-label="Progress to next rank ${Math.round(pct*100)} percent">
+    <circle cx="56" cy="56" r="46" fill="var(--panel)" stroke="var(--line)" stroke-width="8"/>
+    <circle cx="56" cy="56" r="46" fill="none" stroke="var(--amber)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${dash} ${C}" transform="rotate(-90 56 56)"/>
+    ${ticks}
+    <text x="56" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="18">${S.xp}</text>
+    <text x="56" y="70" text-anchor="middle" font-family="Saira Extra Condensed, sans-serif" font-weight="600" font-size="11" letter-spacing="1.5" fill="var(--muted)">AIR MILES</text></svg>`;
+}
+function acc(id){ const s=S.stats[id]; if(!s||!s.tries) return null; return Math.round(100*s.right/s.tries); }
+function weakest(){ const seen=ALL.filter(t=>S.stats[t.id]&&S.stats[t.id].tries); if(!seen.length) return pick(ALL); seen.sort((a,b)=>acc(a.id)-acc(b.id)); return seen[0]; }
+
+function render(){
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-current', b.dataset.tab===view.tab?'page':'false'));
+  if (view.tab!=='practice' && timerId){ clearInterval(timerId); timerId=null; }
+  const fn = {home:Home, school:School, lesson:Lesson, practice:Practice, book:Book, log:Log, flash:Flash, ask:Ask, fund:Fund, exam:ExamPick}[view.tab];
+  app.innerHTML = ''; fn();
+}
+
+function Home(){
+  const k=rankOf(S.xp); const h=new Date().getHours(); const hi = h<12?'Morning':h<17?'Afternoon':'Evening';
+  const done = S.lastDay===today();
+  app.innerHTML = `<div class="stack">
+    <div class="top">${altimeter()}
+      <div><p class="label">${hi}, Captain-in-training</p><h1>Sho Lilly!</h1>
+        <div class="rank">${k.name}</div>
+        <div class="stats"><div class="stat"><b>${S.streak}</b><span>day streak</span></div>
+        <div class="stat"><b>${k.next? k.next-S.xp : 0}</b><span>${k.next? 'miles to '+k.nextName : 'top rank'}</span></div></div></div></div>
+
+    <div class="pass pop"><div class="main"><p class="label">Today's mission</p>
+      <h2>${done?'Mission complete. Fly again?':'5 questions to keep your streak'}</h2>
+      <p class="flight">FLIGHT LL-${today().replace(/-/g,'').slice(2)} · JNB → YOUR 50%</p>
+      <div class="row"><button class="btn amber" id="m-go">${done?'Bonus round':'Board now'}</button></div></div>
+      <div class="stub"><small>Seat</small><b>1A</b><small>Gate 11</small></div></div>
+
+    <div class="grid2">
+      <button class="card" id="wake"><span class="label">Wake-up check</span><h3>1 question to start the day</h3><span class="sub">Before Insta. Brain first, chommie.</span></button>
+      <button class="card" id="bed"><span class="label">Bedtime briefing</span><h3>3 from your mistakes</h3><span class="sub">Fix what tripped you up today.</span></button>
+    </div>
+
+    <div class="grid2">
+      <button class="card" id="c-scan"><span class="label">Stuck on homework?</span><h3>Scan a question</h3><span class="sub">Snap it, get the cupcake version and the steps.</span></button>
+      <button class="card" id="c-exam"><span class="label">Exam prep</span><h3>Mock test</h3><span class="sub">Timed, no hints, with a predicted mark.</span></button>
+      <button class="card" id="c-papers"><span class="label">My papers</span><h3>${(S.custom||[]).length ? (S.custom.length+' practice set'+(S.custom.length>1?'s':'')) : 'Upload a test or worksheet'}</h3><span class="sub">Turn old scripts and PDFs into practice.</span></button>
+      <button class="card" id="c-fund"><span class="label">Flight school fund</span><h3>R${Number(S.fund.goal).toLocaleString('en-ZA')} goal</h3><span class="sub">Compound interest, but make it your dream.</span></button>
+    </div>
+    <div><p class="label" style="margin-bottom:10px">Main flight path</p><div class="grid2">
+      <button class="card" data-sub="Maths"><h3>Mathematics</h3><span class="sub">${MATHS.length} topics · Grade 11</span></button>
+      <button class="card" data-sub="Physics"><h3>Physical Sciences</h3><span class="sub">${PHYS.length} topics · Grade 11</span></button>
+    </div></div>
+    <div><p class="label" style="margin-bottom:10px">Quick-fire terms</p><div class="chips">${Object.keys(OTHER).map(s=>`<button class="chip" data-flash="${s}">${s}</button>`).join('')}</div></div>
+    <p class="note">Your progress saves on this phone or laptop only.</p>
+  </div>`;
+  $('#m-go').onclick=()=>startRun('mission', ALL.map(t=>t.id), 5);
+  $('#wake').onclick=()=>startRun('wake',[weakest().id],1);
+  $('#bed').onclick=()=>{ const ids = S.mistakes.length ? [...new Set(S.mistakes.slice(-6))] : ALL.map(t=>t.id); startRun('bed', ids, 3); };
+  app.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>go({tab:'school', sub:b.dataset.sub}));
+  app.querySelectorAll('[data-flash]').forEach(b=>b.onclick=()=>go({tab:'flash', subj:b.dataset.flash, mode:'notes', i:0, flip:false, order:shuffle(OTHER[b.dataset.flash].map((_,i)=>i))}));
+  if (STANDALONE){ ['#c-scan','#c-papers'].forEach(x=>{ const e=$(x); if(e) e.hidden=true; }); }
+  $('#c-scan').onclick=()=>go({tab:'ask', mode:'scan'});
+  $('#c-papers').onclick=()=>go({tab:'ask', mode:'papers'});
+  $('#c-exam').onclick=()=>go({tab:'exam'});
+  $('#c-fund').onclick=()=>go({tab:'fund'});
+}
+
+function School(){
+  const sub = view.sub || 'Maths'; const list = sub==='Maths'?MATHS:PHYS;
+  app.innerHTML = `<div class="stack"><p class="label">Ground school</p><h1>Pick a topic</h1>
+    <div class="chips" role="group" aria-label="Subject">${['Maths','Physics'].map(s=>`<button class="chip" aria-pressed="${s===sub}" data-s="${s}">${s==='Maths'?'Mathematics':'Physical Sciences'}</button>`).join('')}</div>
+    <div class="grid2">${list.map(t=>{ const a=acc(t.id); return `<button class="card" data-id="${t.id}"><h3>${t.name}</h3><span class="sub">${t.blurb}</span>
+      <div class="meter" aria-label="${a===null?'Not started':a+' percent correct'}"><i style="width:${a||0}%"></i></div><span class="sub">${a===null?'Not started':a+'% correct'}</span></button>`; }).join('')}</div></div>`;
+  app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>go({tab:'school',sub:b.dataset.s}));
+  app.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>go({tab:'lesson',id:b.dataset.id,sub}));
+}
+
+function Lesson(){
+  const t = byId(view.id);
+  app.innerHTML = `<div class="stack lesson">
+    <button class="back" id="bk">← ${t.sub==='Maths'?'Mathematics':'Physical Sciences'}</button>
+    <div><p class="label">${t.sub} · Grade 11</p><h1>${t.name}</h1></div>
+    <section class="cup"><p class="label">The cupcake version</p><p>${t.cup}</p></section>
+    <section><p class="label">The rule</p><p class="rule math">${t.rule}</p></section>
+    <section class="panel"><p class="label">Watch me do it</p><p><b>${t.ex.q}</b></p><ol class="steps">${t.ex.steps.map(s=>`<li>${s}</li>`).join('')}</ol></section>
+    <p class="pilot">${PLANE}<span>${t.pilot}</span></p>
+    <div class="row"><button class="btn amber" id="pr">Practise 5 questions</button><button class="btn ghost" id="pr10">Go for 10</button></div>
+  </div>`;
+  $('#bk').onclick=()=>go({tab:'school',sub:t.sub});
+  $('#pr').onclick=()=>startRun('topic',[t.id],5);
+  $('#pr10').onclick=()=>startRun('topic',[t.id],10);
+}
+
+/* practice run */
+function startRun(mode, ids, n){
+  const cache={}; const qs=[]; for(let i=0;i<n;i++){ const id=pick(ids); const t=cache[id]||(cache[id]=byId(id)||pick(ALL)); qs.push({id:t.id, ...t.gen()}); }
+  const back = view.tab==='lesson'?{tab:'lesson',id:view.id,sub:view.sub} : view.tab==='ask'?{tab:'ask',mode:'papers'} : view.tab==='flash'?{tab:'home'} : {tab:'home'};
+  go({tab:'practice', mode, qs, i:0, res:[], answered:false, hint:false, back, ends: mode==='exam' ? Date.now()+n*3*60*1000 : 0});
+}
+let timerId=null;
+function logDay(ok){ const t=today(); const d=S.days[t]||(S.days[t]={q:0,r:0}); d.q++; if(ok) d.r++; }
+function Practice(){
+  const v=view; const q=v.qs[v.i]; const t=byId(q.id)||{name:'Practice'}; const exam=v.mode==='exam';
+  const title = {mission:"Today's mission", wake:'Wake-up check', bed:'Bedtime briefing', topic:t.name, exam:'Mock test', paper:t.name, deck:t.name}[v.mode] || t.name;
+  app.innerHTML = `<div class="stack">
+    <button class="back" id="bk">← Leave</button>
+    <div><div class="row" style="justify-content:space-between"><p class="label">${esc(title)} · ${v.i+1} of ${v.qs.length}</p>${exam?'<span class="timer" id="tm"></span>':''}</div>
+      <div class="prog">${v.qs.map((_,k)=>`<i class="${k<v.i?(exam?'done':(v.res[k]?'done':'miss')):k===v.i?'now':''}"></i>`).join('')}</div></div>
+    <div class="panel stack pop"><p class="label">${esc(t.name)}</p><p class="q">${q.q}</p>
+      ${q.kind==='mc' ? `<div class="opts">${q.opts.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join('')}</div>`
+        : `<form class="ansrow" id="f"><input id="ans" inputmode="decimal" autocomplete="off" placeholder="Your answer${q.unit?' ('+q.unit+')':''}" aria-label="Your answer"><button class="btn" type="submit">${exam?'Lock in':'Check'}</button></form>`}
+      <div id="fb"></div>
+      <div class="row" id="ctl">${exam?`<button class="btn ghost small" id="skip">Skip</button>`:`<button class="btn ghost small" id="hint">Hint</button><button class="btn ghost small" id="show">Show the steps</button>`}</div>
+    </div></div>`;
+  $('#bk').onclick=()=>{ if(timerId){clearInterval(timerId);timerId=null;} go(v.back); };
+  if (exam){ const tick=()=>{ const left=Math.max(0,v.ends-Date.now()); const el=$('#tm'); if(el) el.textContent=`${Math.floor(left/60000)}:${String(Math.floor(left/1000)%60).padStart(2,'0')} left`; if(left<=0){ clearInterval(timerId); timerId=null; endRun(); } };
+    if(!timerId) timerId=setInterval(tick,1000); tick(); $('#skip').onclick=()=>finish(false,false,true); }
+  else { $('#hint').onclick=()=>{ v.hint=true; showHint(); }; $('#show').onclick=()=>finish(false,true); }
+  if (q.kind==='mc') app.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ if(v.answered) return; const ok=q.opts[+b.dataset.k]===q.ans; v.pickd=q.opts[+b.dataset.k];
+    if(!exam){ b.classList.add(ok?'right':'wrong'); if(!ok) app.querySelectorAll('.opt').forEach(x=>{ if(q.opts[+x.dataset.k]===q.ans) x.classList.add('right'); }); } else b.classList.add('right'); finish(ok); });
+  else { const inp=$('#ans'); setTimeout(()=>{ try{inp.focus({preventScroll:true})}catch(e){} },50);
+    $('#f').onsubmit=e=>{ e.preventDefault(); if(v.answered) return; const raw=inp.value.replace(/\s/g,'').replace(',','.').replace('−','-').replace(/[^0-9.\-]/g,''); if(raw===''||isNaN(parseFloat(raw))){ inp.placeholder='Type a number first'; inp.value=''; return; } const val=parseFloat(raw); v.pickd=inp.value; const tol=Math.max(q.tol??0.01, Math.abs(q.ans)*0.002); finish(Math.abs(val-q.ans)<=tol); }; }
+  function showHint(){ const fb=$('#fb'); if(!fb.querySelector('.hint')) fb.insertAdjacentHTML('afterbegin',`<div class="hint"><b>Hint:</b> ${q.hint}</div>`); }
+  function finish(ok, gaveUp, skipped){
+    if (v.answered) return; v.answered=true; v.res[v.i]=ok; (v.given||(v.given=[]))[v.i]= skipped?'(skipped)':(v.pickd??'');
+    const s=S.stats[q.id]||(S.stats[q.id]={right:0,tries:0}); s.tries++; if(ok) s.right++; logDay(ok);
+    const gain = exam?15:(v.hint?10:15);
+    if (ok){ S.xp+=gain; const k=S.mistakes.lastIndexOf(q.id); if(k>-1) S.mistakes.splice(k,1); } else { S.mistakes.push(q.id); S.mistakes=S.mistakes.slice(-30); }
+    save();
+    const last = v.i===v.qs.length-1;
+    if (exam){ v.i<v.qs.length-1 ? (v.i++, v.answered=false, render()) : endRun(); return; }
+    const ans = q.kind==='mc'? q.ans : f(q.ans)+(q.unit?' '+q.unit:'');
+    $('#fb').innerHTML = `${ok?`<div class="fb good">${pick(YAY)} +${gain} air miles</div>`:`<div class="fb bad">${gaveUp?'All good, here is how it works.':pick(NAY)} Answer: ${esc(ans)}</div>`}
+      <ol class="steps" style="margin-top:10px">${q.steps.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+    $('#ctl').innerHTML = `<button class="btn amber" id="nx">${last?'Land the plane':'Next question'}</button>`;
+    $('#nx').onclick=()=>{ if(last) return endRun(); v.i++; v.answered=false; v.hint=false; render(); };
+    $('#nx').focus({preventScroll:true});
+  }
+}
+function endRun(){
+  if (timerId){ clearInterval(timerId); timerId=null; }
+  const v=view; if(v.ended) return; v.ended=true;
+  const right=v.res.filter(Boolean).length; const n=v.qs.length;
+  if (v.mode==='mission'){ S.missionsDone++; markDay(); } if(v.mode==='wake'){S.wake++; markDay();} if(v.mode==='bed'){S.bed++;}
+  const pct=Math.round(100*right/n);
+  if (v.mode==='exam'){ S.exams.push({d:today(), sub:v.examSub, pct}); S.exams=S.exams.slice(-20); }
+  save();
+  const msg = pct>=80?pick(['Flawless flight. Captain behaviour fr.','Airlines are sliding into your DMs as we speak.','You flew that like you own the airline.']):pct>=50?pick(['Safe landing. That is a pass mark, keep stacking.','Passed! The window seat is officially yours.','Not bad, First Officer. Captain is two more flights away.']):pick(['Bumpy flight, but you landed. Every pilot logs practice hours.','Eish. At this rate you will be waving at planes from the taxi rank. Fly again and prove me wrong.','Your dream plane is warming up on the runway. It is waiting for you to practise, not to give up.','Imagine telling your passengers "sorry, I skipped trig". Nope. Fly again.']);
+  const review = v.mode==='exam' ? `<div class="panel"><p class="label">Review every question</p>${v.qs.map((q,k)=>{ const ans=q.kind==='mc'?q.ans:f(q.ans)+(q.unit?' '+q.unit:''); return `<details class="rev"><summary>${v.res[k]?'Correct':'Missed'} · Q${k+1}</summary><p class="q" style="margin:8px 0">${q.q}</p><p class="note">You said: ${esc(v.given?.[k]??'(no answer)')} · Answer: <b>${esc(ans)}</b></p><ol class="steps" style="margin-top:8px">${q.steps.map(x=>`<li>${x}</li>`).join('')}</ol></details>`; }).join('')}</div>` : '';
+  app.innerHTML = `<div class="stack"><p class="label">${v.mode==='exam'?'Mock test result':'Flight report'}</p><h1>${right} of ${n} correct</h1>
+    ${v.mode==='exam'?`<p>Predicted mark if the real test were today: <b>${pct}%</b>${pct>=50?' · Level '+(pct>=80?7:pct>=70?6:pct>=60?5:4):''}</p>`:''}<p>${msg}</p>
+    <div class="panel"><p class="label">Score</p><div class="meter" style="height:12px"><i style="width:${pct}%"></i></div><p class="flight" style="margin-top:6px">${pct}% · target 50%+</p></div>
+    ${review}
+    <div class="row"><button class="btn amber" id="again">Fly again</button><button class="btn ghost" id="home">Back to cockpit</button></div></div>`;
+  $('#again').onclick=()=>{ if(v.mode==='exam') return startExam(v.examSub); startRun(v.mode,[...new Set(v.qs.map(q=>q.id))],n); };
+  $('#home').onclick=()=>go(v.back.tab==='lesson'||v.back.tab==='ask'?v.back:{tab:'home'});
+}
+function ExamPick(){
+  const last = s => { const e=(S.exams||[]).filter(x=>x.sub===s); return e.length? e[e.length-1].pct+'% last time' : 'No mock yet'; };
+  app.innerHTML = `<div class="stack"><button class="back" id="bk">← Cockpit</button><p class="label">Exam prep</p><h1>Mock test</h1>
+    <p>12 questions across every topic, 3 minutes each. No hints, no steps until the end, just like the real thing. Calculator allowed.</p>
+    <div class="grid2"><button class="card" data-x="Maths"><h3>Mathematics</h3><span class="sub">${last('Maths')}</span></button><button class="card" data-x="Physics"><h3>Physical Sciences</h3><span class="sub">${last('Physics')}</span></button></div>
+    <p class="note">Tip: do it at a desk, phone on aeroplane mode (fitting, hey), and write your working on paper.</p></div>`;
+  $('#bk').onclick=()=>go({tab:'home'});
+  app.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>startExam(b.dataset.x));
+}
+function startExam(sub){ const ids=(sub==='Maths'?MATHS:PHYS).map(t=>t.id); view={tab:'exam'}; startRun('exam', ids, 12); view.examSub=sub; view.back={tab:'exam'}; }
+
+function Book(){
+  const sub = view.sub || 'Maths'; const mode = view.mode || 'terms'; const qy=(view.q||'').toLowerCase();
+  const list = (mode==='terms'?TERMS:FORMULAS)[sub].filter(([a,b])=>!qy || (a+' '+b).toLowerCase().includes(qy));
+  app.innerHTML = `<div class="stack"><p class="label">Pilot's handbook</p><h1>Terms & formulas</h1>
+    <div class="chips" role="group" aria-label="Subject">${['Maths','Physics'].map(s=>`<button class="chip" aria-pressed="${s===sub}" data-s="${s}">${s==='Maths'?'Mathematics':'Physical Sciences'}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="Show">${[['terms','Terms'],['formulas','Formulas']].map(([k,l])=>`<button class="chip" aria-pressed="${k===mode}" data-m="${k}">${l}</button>`).join('')}</div>
+    <input class="search" id="q" placeholder="Search, e.g. gradient" value="${esc(view.q||'')}" aria-label="Search the handbook">
+    <dl class="terms">${list.map(([a,b])=>`<div><dt class="${mode==='formulas'?'formula':''}">${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('') || '<p class="note">Nothing found. Try a shorter word.</p>'}</dl></div>`;
+  app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{view.sub=b.dataset.s; render();});
+  app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{view.mode=b.dataset.m; render();});
+  const q=$('#q'); q.oninput=()=>{ view.q=q.value; const pos=q.selectionStart; render(); const n=$('#q'); n.focus(); try{n.setSelectionRange(pos,pos)}catch(e){} };
+}
+
+function Flash(){
+  const v=view; const cards=OTHER[v.subj]; const notes=NOTES[v.subj]||[]; const mode=v.mode||'notes';
+  const tabs = `<div class="chips" role="group" aria-label="Mode">${[['notes','Lessons'],['cards','Flip cards'],['quiz','Quiz me']].map(([k,l])=>`<button class="chip" aria-pressed="${k===mode}" data-m="${k}">${l}</button>`).join('')}</div>`;
+  let body='';
+  if (mode==='notes') body = notes.map(n=>`<section class="panel stack"><h3>${esc(n.t)}</h3><div class="cup"><p class="label">The cupcake version</p><p>${esc(n.cup)}</p></div><ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">${n.pts.map(p=>`<li>${esc(p)}</li>`).join('')}</ul></section>`).join('');
+  else if (mode==='cards'){ const c=cards[v.order[v.i]];
+    body = `<p class="label">Card ${v.i+1} of ${cards.length}</p><button class="flash pop" id="card" aria-label="Flip card">${v.flip?`<p class="label">Meaning</p><p>${esc(c[1])}</p>`:`<p class="label">Do you know this one?</p><p class="big">${esc(c[0])}</p><p class="note">Tap to flip</p>`}</button>
+    <div class="row"><button class="btn ghost" id="pv" ${v.i===0?'disabled':''}>Previous</button><button class="btn amber" id="nx">${v.i===cards.length-1?'Done':'Next card'}</button></div>`; }
+  else body = `<div class="panel stack"><h3>${cards.length} terms. How many can you match?</h3><p>You see the meaning, you pick the right term. 15 air miles each.</p><div class="row"><button class="btn amber" id="qz">Start 5-question quiz</button></div></div>`;
+  app.innerHTML = `<div class="stack"><button class="back" id="bk">← Cockpit</button><p class="label">Quick-fire subject</p><h1>${esc(v.subj)}</h1>${tabs}${body}</div>`;
+  $('#bk').onclick=()=>go({tab:'home'});
+  app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ v.mode=b.dataset.m; v.i=0; v.flip=false; render(); });
+  if (mode==='cards'){
+    $('#card').onclick=()=>{ v.flip=!v.flip; if(v.flip){S.cards++;save();} render(); };
+    $('#pv').onclick=()=>{ v.i--; v.flip=false; render(); };
+    $('#nx').onclick=()=>{ if(v.i===cards.length-1){ S.xp+=20; save(); toast('Deck done. +20 air miles'); v.mode='quiz'; return render(); } v.i++; v.flip=false; render(); };
+  }
+  if (mode==='quiz') $('#qz').onclick=()=>startRun('deck',['deck-'+v.subj],5);
+}
+
+function weekReport(){
+  const days=[]; for(let k=6;k>=0;k--){ days.push(new Date(Date.now()-k*864e5).toISOString().slice(0,10)); }
+  let q=0,rt=0,active=0; days.forEach(d=>{ const x=S.days[d]; if(x&&x.q){ q+=x.q; rt+=x.r; active++; } });
+  const scored=[...ALL,...DECKS].filter(t=>S.stats[t.id]&&S.stats[t.id].tries>=3).map(t=>({n:t.name,a:acc(t.id)}));
+  const strong=scored.filter(x=>x.a>=60).sort((a,b)=>b.a-a.a).slice(0,3).map(x=>`${x.n} (${x.a}%)`);
+  const weak=scored.filter(x=>x.a<50).sort((a,b)=>a.a-b.a).slice(0,3).map(x=>`${x.n} (${x.a}%)`);
+  const ex=(S.exams||[]).slice(-2).map(e=>`${e.sub} mock: ${e.pct}%`);
+  return `Lilly's Flight Deck: this week\n\nDays practised: ${active} of 7\nQuestions answered: ${q}\nCorrect: ${q?Math.round(100*rt/q):0}%\nStreak: ${S.streak} day${S.streak===1?'':'s'}\nRank: ${rankOf(S.xp).name} (${S.xp} air miles)\n${ex.length?'\n'+ex.join('\n')+'\n':''}\nStrongest: ${strong.join(', ')||'keep practising to unlock'}\nNeeds work: ${weak.join(', ')||'nothing below 50% yet'}`;
+}
+function Log(){
+  const badges=[['First flight',S.missionsDone>=1],['3-day streak',S.streak>=3],['7-day streak',S.streak>=7],['Early bird (5 wake-ups)',S.wake>=5],['Night shift (5 briefings)',S.bed>=5],['Card shark (50 cards)',S.cards>=50],['Mock test pass',(S.exams||[]).some(e=>e.pct>=50)],['Private Pilot rank',S.xp>=400],['Captain rank',S.xp>=3500]];
+  const rows=ALL.map(t=>{ const s=S.stats[t.id]; return {t, a:acc(t.id), n:s?s.tries:0}; });
+  const rep=weekReport();
+  app.innerHTML = `<div class="stack"><p class="label">Pilot logbook</p><h1>Your progress</h1>
+    <div class="panel stack"><p class="label">Weekly report for Aunty</p><p class="report" id="rep">${esc(rep)}</p>
+      <div class="row"><button class="btn small" id="cp">Copy for WhatsApp</button><span class="note" id="cpn"></span></div></div>
+    <div class="panel"><p class="label" style="margin-bottom:8px">Badges</p><div class="chips">${badges.map(([b,on])=>`<span class="badge ${on?'':'off'}">${on?PLANE:''}${b}</span>`).join('')}</div></div>
+    <div class="panel"><p class="label" style="margin-bottom:8px">By topic</p><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums">
+      <thead><tr><th style="text-align:left;padding:6px 4px" class="label">Topic</th><th class="label" style="text-align:right;padding:6px 4px">Tries</th><th class="label" style="text-align:right;padding:6px 4px">Correct</th></tr></thead>
+      <tbody>${rows.map(({t,a,n})=>`<tr style="border-top:1px solid var(--line)"><td style="padding:8px 4px">${t.name}<br><span class="note">${t.sub}</span></td><td style="text-align:right;padding:8px 4px;font-family:var(--f-mono)">${n}</td><td style="text-align:right;padding:8px 4px;font-family:var(--f-mono);color:${a===null?'var(--muted)':a>=50?'var(--good)':'var(--bad)'}">${a===null?'–':a+'%'}</td></tr>`).join('')}</tbody></table></div></div>
+    <p class="note">Green means 50% or more. Red topics are where to practise next.</p>
+    <div id="reset"><button class="btn ghost small" id="r1">Start over</button></div></div>`;
+  $('#cp').onclick=()=>{ const done=()=>{$('#cpn').textContent='Copied. Paste it into WhatsApp.';}; try{ navigator.clipboard.writeText(rep).then(done,()=>{ selectRep(); }); }catch(e){ selectRep(); } };
+  function selectRep(){ const rg=document.createRange(); rg.selectNodeContents($('#rep')); const s=getSelection(); s.removeAllRanges(); s.addRange(rg); $('#cpn').textContent='Selected. Press copy on your phone.'; }
+  $('#r1').onclick=()=>{ $('#reset').innerHTML=`<div class="row"><span>Wipe all progress?</span><button class="btn small" id="r2">Yes, wipe it</button><button class="btn ghost small" id="r3">Keep it</button></div>`;
+    $('#r2').onclick=()=>{ S=FRESH(); save(); render(); }; $('#r3').onclick=()=>render(); };
+}
+
+/* ---------- flight school fund ---------- */
+function Fund(){
+  const F=S.fund;
+  function months(){ const i=F.rate/100/12; let bal=+F.have||0, m=0; if(bal>=F.goal) return 0; if(!(+F.monthly>0) && i<=0) return Infinity; while(bal<F.goal && m<600){ bal=bal*(1+i)+(+F.monthly||0); m++; } return m>=600?Infinity:m; }
+  function draw(){ const m=months(); const out=$('#fout');
+    if (m===Infinity){ out.innerHTML='<p>Add a monthly amount so the fund can grow.</p>'; return; }
+    const y=Math.floor(m/12), mm=m%12; const paidIn=(+F.have||0)+m*(+F.monthly||0); const interest=Math.max(0,F.goal-paidIn);
+    out.innerHTML = `<p class="label">You reach R${Number(F.goal).toLocaleString('en-ZA')} in</p><p class="big-num">${y?y+' yr ':''}${mm} mo</p>
+      <p>You put in about <b>R${Math.round(paidIn).toLocaleString('en-ZA')}</b>. Compound interest adds roughly <b>R${Math.round(interest).toLocaleString('en-ZA')}</b> for free.</p>
+      <p class="note">This is your Grade 11 finance topic in real life: A = P(1 + i)ⁿ, with interest added every month (i = ${F.rate}% ÷ 12).</p>`; }
+  app.innerHTML = `<div class="stack"><button class="back" id="bk">← Cockpit</button><p class="label">Flight school fund</p><h1>When can you start flying?</h1>
+    <p>Type in your own numbers. The R150 000 goal is just an example: check real flight school prices together and change it.</p>
+    <div class="panel grid2">
+      <label class="field"><span class="label">Goal (R)</span><input id="fg" inputmode="numeric" value="${F.goal}"></label>
+      <label class="field"><span class="label">Saved already (R)</span><input id="fh" inputmode="numeric" value="${F.have}"></label>
+      <label class="field"><span class="label">Save every month (R)</span><input id="fm" inputmode="numeric" value="${F.monthly}"></label>
+      <label class="field"><span class="label">Interest rate (% per year)</span><input id="fr" inputmode="decimal" value="${F.rate}"></label>
+    </div><div class="panel" id="fout"></div></div>`;
+  $('#bk').onclick=()=>go({tab:'home'});
+  [['fg','goal'],['fh','have'],['fm','monthly'],['fr','rate']].forEach(([id,k])=>{ $('#'+id).oninput=e=>{ const n=parseFloat(String(e.target.value).replace(/[\s,]/g,'')); F[k]=isNaN(n)?0:n; save(); draw(); }; });
+  draw();
+}
+
+/* ---------- Scan & upload (uses Claude through the viewer's account) ---------- */
+let SAMPLE=null, IMGCAPS=null;
+(async()=>{ try{ SAMPLE = await window.claude?.use?.('sample'); if(SAMPLE){ const l=await SAMPLE.limits().catch(()=>null); IMGCAPS=l?.images||null; } }catch(e){ SAMPLE=null; } if(view.tab==='ask') render(); })();
+const ERR = c => ({not_granted:'Claude was not allowed for this app. Open the page menu → Permissions to allow it.', rate_limited:'Too many questions for now. Take a 5-minute break and try again.', image_rejected:'That photo could not be read. Try a clearer, smaller photo.', refused:'Claude could not help with that one. Try a different question.', invalid_json:'The answer came back jumbled. Tap the button to try again.', session_expired:'Please sign in to Claude again, then try.', sampling_disabled:'Claude is not available on this account.', prompt_too_large:'That is too much at once. Try fewer pages.'}[c] || 'Something went wrong on the way. Tap the button to try again.');
+let pdfReady=null;
+function loadPdf(){ if(pdfReady) return pdfReady; pdfReady=new Promise((ok,no)=>{ const a=document.createElement('script'); a.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'; a.onload=()=>{ const b=document.createElement('script'); b.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; b.onload=()=>ok(window.pdfjsLib); b.onerror=no; document.head.appendChild(b); }; a.onerror=no; document.head.appendChild(a); }); return pdfReady; }
+async function pdfToImages(file, max){
+  const lib=await loadPdf(); const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise; const out=[];
+  for(let p=1;p<=Math.min(doc.numPages,max);p++){ const page=await doc.getPage(p); const vp0=page.getViewport({scale:1}); const scale=Math.min(2, 1400/Math.max(vp0.width,vp0.height)); const vp=page.getViewport({scale});
+    const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height; await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise; out.push(await new Promise(r=>c.toBlob(r,'image/jpeg',0.85))); }
+  return {imgs:out, pages:doc.numPages};
+}
+async function toImages(files){ const max=IMGCAPS?.maxCount||4; let imgs=[], skipped=0;
+  for (const fl of files){ if(imgs.length>=max){ skipped++; continue; }
+    if (fl.type==='application/pdf'){ const {imgs:p,pages}=await pdfToImages(fl, max-imgs.length); imgs.push(...p); if(pages>p.length) skipped+=pages-p.length; }
+    else if (fl.type.startsWith('image/')) imgs.push(fl); }
+  return {imgs, skipped, max};
+}
+
+function Ask(){
+  const mode=view.mode||'scan';
+  const tabs=`<div class="chips" role="group" aria-label="Scan mode">${[['scan','Scan one question'],['papers','My papers']].map(([k,l])=>`<button class="chip" aria-pressed="${k===mode}" data-m="${k}">${l}</button>`).join('')}</div>`;
+  const off = !SAMPLE ? `<div class="hint">This part uses Claude to read photos and PDFs. It works when you open the app signed in to Claude and allow it when asked. Everything else in the app works without it.</div>` : '';
+  const noImg = SAMPLE && !IMGCAPS ? `<p class="note">Photos are not available here, but you can type the question.</p>` : '';
+  if (mode==='scan'){
+    app.innerHTML = `<div class="stack"><p class="label">Scan</p><h1>Stuck? Show me the question</h1>${tabs}${off}
+      <div class="drop">${IMGCAPS?`<label class="label" for="ph">Take or pick a photo</label><input type="file" id="ph" accept="${(IMGCAPS.mediaTypes||['image/jpeg','image/png']).join(',')}" capture="environment"><div class="thumbs" id="th"></div>`:''}${noImg}
+        <label class="label" for="tx">${IMGCAPS?'Or type it':'Type the question'}</label><textarea class="search" id="tx" placeholder="e.g. Solve x² − 7x + 12 = 0"></textarea>
+        <div class="row"><button class="btn amber" id="go" ${SAMPLE?'':'disabled'}>Explain it, Captain</button><button class="btn ghost small" id="stop" hidden>Stop</button></div></div>
+      <div id="out" class="stack"></div></div>`;
+    let photo=null; const ph=$('#ph');
+    if (ph) ph.onchange=()=>{ photo=ph.files[0]||null; $('#th').innerHTML= photo?`<img alt="Your photo" src="${URL.createObjectURL(photo)}">`:''; };
+    let ctl=null; $('#stop').onclick=()=>ctl?.abort();
+    $('#go').onclick=async()=>{ const text=$('#tx').value.trim(); if(!photo && !text){ $('#out').innerHTML='<div class="hint">Add a photo or type the question first.</div>'; return; }
+      ctl=new AbortController(); $('#go').disabled=true; $('#stop').hidden=false; $('#out').innerHTML='<div class="hint">Thinking… the Captain is reading your question.</div>';
+      const prompt=`You are a patient tutor for Lilly, a South African Grade 11 learner (CAPS) who wants to be a pilot and is currently scoring about 30%. ${photo?'The image shows a homework or test question.':''} ${text?'Her question: """'+text.slice(0,3000)+'"""':''}
+Explain it so a beginner gets it. Use very simple words, a short everyday comparison (like cupcakes), and friendly South African chommie / Gen Z tone lightly (e.g. "sho", "no stress"). Do not just give the answer: break it into small steps she can follow. Use plain text maths (x², √, ×, ÷), no LaTeX.
+If there are several questions in the image, pick the first one and say so in "note".
+Reply with ONLY this JSON:
+{"subject":"Maths|Physical Sciences|Other","topic":"short topic name","question":"the question as you read it","cupcake":"2-3 sentence simple explanation of the idea","rule":"the key rule or formula","steps":["step 1","step 2","..."],"answer":"final answer with units","tip":"one exam tip","similar":{"q":"a similar practice question with different numbers","answer":"its answer","steps":["..."]},"note":"optional, empty if none"}`;
+      try{ const res = await SAMPLE.json(prompt, {images: photo?[photo]:undefined, signal:ctl.signal, modelTier:'default'}); renderExplain(res); S.xp+=5; save(); }
+      catch(e){ if(e?.code!=='cancelled') $('#out').innerHTML=`<div class="fb bad">${esc(ERR(e?.code))}</div>`; else $('#out').innerHTML=''; }
+      finally{ $('#go').disabled=false; $('#stop').hidden=true; } };
+  } else {
+    const sets=S.custom||[];
+    app.innerHTML = `<div class="stack"><p class="label">My papers</p><h1>Turn old tests into practice</h1>${tabs}${off}
+      <div class="drop"><p>Upload a marked test, worksheet or past paper (photo or PDF). Claude reads it and builds a practice set with <b>new numbers</b>, focusing on what you got wrong.</p>
+        ${IMGCAPS?`<label class="label" for="up">Choose files</label><input type="file" id="up" accept="application/pdf,${(IMGCAPS.mediaTypes||['image/jpeg','image/png']).join(',')}" multiple><p class="note">Up to ${IMGCAPS.maxCount} pages per upload. For a long paper, upload a few pages at a time.</p>`:`<p class="note">Uploads need Claude with photos allowed.</p>`}
+        <div class="row"><button class="btn amber" id="mk" ${IMGCAPS?'':'disabled'}>Make my practice set</button><button class="btn ghost small" id="stop" hidden>Stop</button></div><div id="st"></div></div>
+      <div class="stack">${sets.length?'<p class="label">Saved practice sets</p>':''}${sets.map(c=>`<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>${esc(c.name)}</h3><span class="tag">${esc(c.sub)}</span></div>
+        ${c.summary?`<p class="note">${esc(c.summary)}</p>`:''}<div class="row"><button class="btn small amber" data-p="${c.id}">Practise ${c.qs.length}</button><button class="btn ghost small" data-d="${c.id}">Delete</button></div></div>`).join('')}</div></div>`;
+    app.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{ const c=sets.find(x=>x.id===b.dataset.p); startRun('paper',[c.id],c.qs.length); });
+    app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{ if(b.dataset.sure){ S.custom=S.custom.filter(x=>x.id!==b.dataset.d); save(); render(); } else { b.dataset.sure='1'; b.textContent='Tap again to delete'; } });
+    let ctl=null; const stop=$('#stop'); if(stop) stop.onclick=()=>ctl?.abort();
+    const mk=$('#mk'); if(mk) mk.onclick=async()=>{ const files=[...($('#up')?.files||[])]; if(!files.length){ $('#st').innerHTML='<div class="hint">Choose a photo or PDF first.</div>'; return; }
+      ctl=new AbortController(); mk.disabled=true; stop.hidden=false; $('#st').innerHTML='<div class="hint">Reading your pages…</div>';
+      try{ const {imgs,skipped,max}=await toImages(files); if(!imgs.length) throw {code:'image_rejected'};
+        $('#st').innerHTML=`<div class="hint">Building your practice set from ${imgs.length} page${imgs.length>1?'s':''}… this can take a minute.${skipped?` (Only the first ${max} pages were used.)`:''}</div>`;
+        const prompt=`These images are pages from a South African Grade 11 (CAPS) learner's test, worksheet or past paper. Teacher marks or crosses may show what she got wrong. She wants to be a pilot and currently scores about 30%.
+Make a practice set of 6 to 8 NEW questions that practise the same skills (change the numbers; focus first on questions she got wrong if you can see marks). Keep each question short and self-contained. Plain text maths (x², √, ×, ÷), no LaTeX.
+Each question is either numeric ("kind":"num", "ans" a plain number, "unit" a short unit or "") or multiple choice ("kind":"mc", "opts" 4 short strings, "ans" exactly one of them).
+Reply with ONLY this JSON:
+{"title":"short name, e.g. Term 3 Maths test: quadratics","subject":"Maths|Physics|Geography|Accounting|English|Afrikaans|Life Orientation","summary":"one friendly sentence on what to focus on","questions":[{"q":"...","kind":"num","ans":12,"unit":"","tol":0.01,"hint":"short hint","steps":["step 1","step 2"]}]}`;
+        const res=await SAMPLE.json(prompt,{images:imgs, signal:ctl.signal, modelTier:'default'});
+        const qs=(res?.questions||[]).map(cleanQ).filter(Boolean); if(!qs.length) throw {code:'invalid_json'};
+        const id='cust-'+Date.now(); S.custom=[{id, name:String(res.title||'My practice set').slice(0,80), sub:String(res.subject||'My papers').slice(0,30), summary:String(res.summary||'').slice(0,240), qs}, ...(S.custom||[])].slice(0,20); save();
+        toast('Practice set saved'); render();
+      }catch(e){ if(e?.code!=='cancelled') $('#st').innerHTML=`<div class="fb bad">${esc(e?.code?ERR(e.code):'That file could not be opened. Try a photo of the page instead.')}</div>`; else $('#st').innerHTML=''; }
+      finally{ const m=$('#mk'); if(m) m.disabled=false; const s=$('#stop'); if(s) s.hidden=true; } };
+  }
+  app.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>go({tab:'ask', mode:b.dataset.m}));
+}
+function cleanQ(x){ if(!x||!x.q) return null; const steps=(Array.isArray(x.steps)?x.steps:[]).map(s=>esc(String(s))); const hint=esc(String(x.hint||'Read the question twice and write down what you know.')); const q=esc(String(x.q));
+  if (x.kind==='mc' && Array.isArray(x.opts) && x.opts.length>=2){ const opts=x.opts.map(String).slice(0,5); const ans=String(x.ans); if(!opts.includes(ans)) return null; return {q, kind:'mc', opts:shuffle(opts), ans, hint, steps}; }
+  const n=parseFloat(String(x.ans).replace(',','.').replace('−','-')); if(isNaN(n)) return null; return {q, kind:'num', ans:n, tol:Math.max(Number(x.tol)||0.01, Math.abs(n)*0.005), unit:String(x.unit||'').slice(0,12), hint, steps}; }
+function renderExplain(x){
+  const steps=(x.steps||[]).map(String); let shown=1;
+  const box=$('#out');
+  box.innerHTML = `<div class="panel stack pop">
+      <div class="row" style="justify-content:space-between"><p class="label">${esc(x.topic||'Your question')}</p><span class="tag">${esc(x.subject||'')}</span></div>
+      ${x.question?`<p class="q">${esc(x.question)}</p>`:''}${x.note?`<p class="note">${esc(x.note)}</p>`:''}
+      <div class="cup"><p class="label">The cupcake version</p><p>${esc(x.cupcake||'')}</p></div>
+      ${x.rule?`<p class="rule math">${esc(x.rule)}</p>`:''}
+      <div><p class="label">Step by step: try each one before you tap next</p><ol class="steps" id="sl" style="margin-top:8px"></ol></div>
+      <div class="row"><button class="btn small" id="ns">Next step</button><button class="btn ghost small" id="sa">Show the answer</button></div>
+      <div id="an"></div>
+      ${x.tip?`<p class="pilot">${PLANE}<span><b>Exam tip:</b> ${esc(x.tip)}</span></p>`:''}
+    </div>
+    ${x.similar?.q?`<div class="panel stack"><p class="label">Your turn: a similar one</p><p class="q">${esc(x.similar.q)}</p><div class="row"><button class="btn ghost small" id="sim">Check my answer</button></div><div id="simout"></div></div>`:''}`;
+  const draw=()=>{ $('#sl').innerHTML=steps.slice(0,shown).map(s=>`<li>${esc(s)}</li>`).join(''); $('#ns').disabled=shown>=steps.length; $('#ns').textContent=shown>=steps.length?'All steps shown':'Next step'; };
+  $('#ns').onclick=()=>{ shown++; draw(); };
+  $('#sa').onclick=()=>{ shown=steps.length; draw(); $('#an').innerHTML=`<div class="fb good">Answer: ${esc(x.answer||'')}</div>`; };
+  const sim=$('#sim'); if(sim) sim.onclick=()=>{ $('#simout').innerHTML=`<div class="fb good">Answer: ${esc(x.similar.answer||'')}</div><ol class="steps" style="margin-top:8px">${(x.similar.steps||[]).map(s=>`<li>${esc(String(s))}</li>`).join('')}</ol>`; };
+  draw();
+}
+
+function toast(m){ const d=document.createElement('div'); d.className='toast'; d.textContent=m; document.body.appendChild(d); setTimeout(()=>d.remove(),2200); }
+
+if (STANDALONE){ const t=document.getElementById('tab-ask'); if(t) t.hidden=true; }
+/* open on the right tab from a link like …#wake */
+const h=(location.hash||'').slice(1);
+if (h==='wake'){ render(); startRun('wake',[weakest().id],1); }
+else if (h==='bed'){ render(); startRun('bed', S.mistakes.length?[...new Set(S.mistakes)]:ALL.map(t=>t.id),3); }
+else render();
+</script>
+
+</body></html>
